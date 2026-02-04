@@ -44,6 +44,7 @@ export default function DashboardPage() {
 
     const room = data?.room as Room;
     const questions = (data?.questions || []) as Question[];
+    const qrCode = data?.qr_code as string;
 
     // Real-time Updates
     const { lastMessage } = useRoomSocket(room?.id);
@@ -118,9 +119,9 @@ export default function DashboardPage() {
 
                 <div className="bg-white p-4 rounded-lg border flex flex-col items-center text-center">
                     <p className="text-sm font-medium mb-2">Audience Scan</p>
-                    {room.qr_code ? (
+                    {qrCode ? (
                         <img
-                            src={`data:image/png;base64,${room.qr_code}`}
+                            src={`data:image/png;base64,${qrCode}`}
                             alt="Room QR Code"
                             className="w-32 h-32"
                         />
