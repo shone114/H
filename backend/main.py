@@ -40,5 +40,9 @@ async def startup_event():
         await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/")
+def health_check():
+    return {"status": "ok"}
+
+@app.get("/")
 async def root():
     return {"message": "HushHour API is running"}
