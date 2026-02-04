@@ -176,12 +176,7 @@ export default function DashboardPage() {
                             Latest
                         </button>
                     </div>
-                    <Button
-                        variant={activeTab === 'answered' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('answered')}
-                    >
-                        Answered ({questions.filter(q => q.is_answered).length})
-                    </Button>
+
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4">
