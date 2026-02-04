@@ -52,6 +52,11 @@ async def reply_question(
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
 
+    # Profanity Check
+    from utils import is_profane
+    if is_profane(reply_in.reply_text):
+        raise HTTPException(status_code=400, detail="Profanity/Inappropriate content detected.")
+
     question.organizer_reply = reply_in.reply_text
     question.is_answered = True
     

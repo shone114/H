@@ -45,3 +45,12 @@ def get_frontend_url() -> str:
     if cors_origins and cors_origins[0]:
         return cors_origins[0].strip()
     return "http://localhost:5173"
+
+def is_profane(text: str) -> bool:
+    """
+    Checks if the text contains profanity using better_profanity.
+    Returns True if profane, False otherwise.
+    """
+    from better_profanity import profanity
+    # safe implementation: load default words if not already loaded (library handles this efficiently)
+    return profanity.contains_profanity(text)

@@ -46,6 +46,11 @@ async def ask_question(
 ):
     check_room_expiration(room)
     
+    # Profanity Check
+    from utils import is_profane
+    if is_profane(question_in.content):
+        raise HTTPException(status_code=400, detail="Profanity/Inappropriate content detected.")
+    
     # Soft Spam Prevention (Simple: 1 question per 10 seconds per voter? - Needs Redis or similar to track state)
     # Since we are "Stateless/DB only", we can check DB for recent questions by this voter in this room.
     
