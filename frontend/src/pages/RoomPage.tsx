@@ -44,6 +44,15 @@ export default function RoomPage() {
         return id;
     });
 
+    const [votedQuestions, setVotedQuestions] = useState<string[]>(() => {
+        try {
+            const stored = localStorage.getItem(`voted_${code}`);
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
+    });
+
     // 1. Fetch Room Info
     const { data: room, isLoading: roomLoading, error: roomError } = useQuery<Room>({
         queryKey: ['room', code],
@@ -127,6 +136,14 @@ export default function RoomPage() {
                     q.id === questionId ? { ...q, votes: q.votes + 1 } : q
                 ));
             }
+
+            // Optimistic local state update
+            if (!votedQuestions.includes(questionId)) {
+                const newVoted = [...votedQuestions, questionId];
+                setVotedQuestions(newVoted);
+                localStorage.setItem(`voted_${code}`, JSON.stringify(newVoted));
+            }
+
             return { previousQuestions };
         },
         onError: (_err, _newTodo, context) => {
@@ -232,47 +249,51 @@ export default function RoomPage() {
                             <p>No questions yet. Be the first to ask!</p>
                         </div>
                     ) : (
-                        questions.map((q) => (
-                            <Card key={q.id} className={cn("transition-all", q.is_answered ? "bg-muted/30 border-l-4 border-l-green-500" : "")}>
-                                <CardContent className="p-4 flex gap-4">
-                                    {/* Vote Button */}
-                                    <div className="flex flex-col items-center gap-1">
-                                        <button
-                                            onClick={() => !isExpired && voteMutation.mutate(q.id)}
-                                            disabled={isExpired}
-                                            className={cn(
-                                                "p-2 rounded-lg hover:bg-secondary transition-colors flex flex-col items-center min-w-[3rem]",
-                                                "text-primary/70 hover:text-primary"
-                                            )}
-                                        >
-                                            <ArrowUp className="w-5 h-5" />
-                                            <span className="text-sm font-bold">{q.votes}</span>
-                                        </button>
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <p className="text-base font-medium leading-relaxed">{q.content}</p>
-                                            {q.is_answered && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 shrink-0">Answered</Badge>}
+                        questions.map((q) => {
+                            const hasVoted = votedQuestions.includes(q.id);
+                            return (
+                                <Card key={q.id} className={cn("transition-all", q.is_answered ? "bg-muted/30 border-l-4 border-l-green-500" : "")}>
+                                    <CardContent className="p-4 flex gap-4">
+                                        {/* Vote Button */}
+                                        <div className="flex flex-col items-center gap-1">
+                                            <button
+                                                onClick={() => !isExpired && !hasVoted && voteMutation.mutate(q.id)}
+                                                disabled={isExpired || hasVoted}
+                                                className={cn(
+                                                    "p-2 rounded-lg transition-colors flex flex-col items-center min-w-[3rem]",
+                                                    hasVoted
+                                                        ? "bg-primary text-white cursor-default"
+                                                        : "hover:bg-secondary text-primary/70 hover:text-primary"
+                                                )}
+                                            >
+                                                <ArrowUp className={cn("w-5 h-5", hasVoted && "text-white")} />
+                                                <span className="text-sm font-bold">{q.votes}</span>
+                                            </button>
                                         </div>
 
-                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-
-                                        {/* Organizer Reply */}
-                                        {q.organizer_reply && (
-                                            <div className="mt-3 bg-primary/5 p-3 rounded-md border border-primary/10 text-sm">
-                                                <p className="font-semibold text-primary mb-1 text-xs uppercase tracking-wide">Organizer Reply</p>
-                                                <p>{q.organizer_reply}</p>
+                                        {/* Content */}
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <p className="text-base font-medium leading-relaxed">{q.content}</p>
+                                                {q.is_answered && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 shrink-0">Answered</Badge>}
                                             </div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))
+
+                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+
+                                            {/* Organizer Reply */}
+                                            {q.organizer_reply && (
+                                                <div className="mt-3 bg-primary/5 p-3 rounded-md border border-primary/10 text-sm">
+                                                    <p className="font-semibold text-primary mb-1 text-xs uppercase tracking-wide">Organizer Reply</p>
+                                                    <p>{q.organizer_reply}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))
                     )}
                 </div>
             </div>

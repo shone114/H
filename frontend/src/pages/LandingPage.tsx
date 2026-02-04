@@ -10,17 +10,11 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [joinCode, setJoinCode] = useState('');
     const [createTitle, setCreateTitle] = useState('');
+    const [duration, setDuration] = useState(6);
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState('');
 
-    const handleJoin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (joinCode.length < 6) {
-            setError('Code must be at least 6 characters');
-            return;
-        }
-        navigate(`/r/${joinCode.toUpperCase()}`);
-    };
+    // ... join handler ...
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +25,7 @@ export default function LandingPage() {
         try {
             const res = await api.post('/api/rooms/', {
                 title: createTitle,
-                expires_hours: 6
+                expires_hours: duration
             });
             const { code, organizer_token } = res.data;
             navigate(`/dashboard/${code}/${organizer_token}`);
@@ -48,6 +42,7 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
                 {/* Join Section */}
                 <Card className="w-full">
+                    {/* ... keep join section same ... */}
                     <CardHeader>
                         <CardTitle className="text-2xl">Join a Session</CardTitle>
                         <CardDescription>Enter the 6-character room code to join anonymously.</CardDescription>
@@ -88,6 +83,28 @@ export default function LandingPage() {
                                     onChange={(e) => setCreateTitle(e.target.value)}
                                 />
                             </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground">Duration</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[1, 6, 12, 24].map((hrs) => (
+                                        <button
+                                            key={hrs}
+                                            type="button"
+                                            onClick={() => setDuration(hrs)}
+                                            className={`
+                                                py-2 rounded-md text-sm font-medium transition-all
+                                                ${duration === hrs
+                                                    ? 'bg-primary text-white shadow-md'
+                                                    : 'bg-white text-gray-600 border hover:border-primary/50'}
+                                            `}
+                                        >
+                                            {hrs}h
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <Button type="submit" className="w-full" size="lg" disabled={isCreating || !createTitle.trim()}>
                                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                                 {isCreating ? 'Creating...' : 'Create Room'}
