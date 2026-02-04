@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, validator, ConfigDict, field_serializer
 from datetime import datetime
 from typing import Optional, List
 
@@ -17,10 +17,9 @@ class RoomResponse(BaseModel):
     is_active: bool
     # organizer_token is NOT returned here for security, only on creation response
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() + 'Z' if v.tzinfo is None else v.isoformat()
-        }
+    @field_serializer('created_at', 'expires_at')
+    def serialize_dt(self, dt: datetime, _info):
+        return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
 
 class RoomCreatedResponse(RoomResponse):
     organizer_token: str
@@ -45,6 +44,10 @@ class QuestionResponse(BaseModel):
     votes: int
     is_answered: bool
     organizer_reply: Optional[str] = None
+
+    @field_serializer('created_at')
+    def serialize_dt(self, dt: datetime, _info):
+        return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
 
 class VoteCreate(BaseModel):
     voter_id: str
