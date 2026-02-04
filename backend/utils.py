@@ -11,13 +11,8 @@ def generate_room_code() -> str:
     """Generates a 6-character alphanumeric room code."""
     return str(uuid.uuid4())[:6].upper()
 
-def generate_organizer_token() -> str:
     """Generates a secure token for organizer access."""
     return str(uuid.uuid4())
-
-from datetime import datetime, timezone
-
-# ... imports ...
 
 def get_utc_now() -> datetime:
     return datetime.now(timezone.utc)
