@@ -293,7 +293,8 @@ export default function RoomPage() {
                                         </div>
                                     </CardContent>
                                 </Card>
-                            ))
+                            );
+                        })
                     )}
                 </div>
             </div>

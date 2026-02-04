@@ -16,6 +16,15 @@ export default function LandingPage() {
 
     // ... join handler ...
 
+    const handleJoin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (joinCode.length < 6) {
+            setError('Code must be at least 6 characters');
+            return;
+        }
+        navigate(`/r/${joinCode.toUpperCase()}`);
+    };
+
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!createTitle.trim()) return;
