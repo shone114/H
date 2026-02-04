@@ -17,6 +17,11 @@ class RoomResponse(BaseModel):
     is_active: bool
     # organizer_token is NOT returned here for security, only on creation response
 
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat() + 'Z' if v.tzinfo is None else v.isoformat()
+        }
+
 class RoomCreatedResponse(RoomResponse):
     organizer_token: str
     qr_code: str
