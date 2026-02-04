@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from typing import List
+import os
 
 from database import get_db
 from models import Question, Room
@@ -27,7 +28,8 @@ async def get_dashboard_data(
     questions = result.scalars().all()
     
     # Generate QR Code
-    join_url = f"https://hushhour.app/r/{room.code}" 
+    from utils import get_frontend_url
+    join_url = f"{get_frontend_url()}/r/{room.code}" 
     qr_base64 = generate_qr_code_base64(join_url)
 
     return {

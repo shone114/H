@@ -35,3 +35,13 @@ def generate_qr_code_base64(data: str) -> str:
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
     return img_str
+
+def get_frontend_url() -> str:
+    """Helper to get the frontend URL from CORS_ORIGINS for emails/QR codes."""
+    import os
+    cors_origins = os.getenv("CORS_ORIGINS", "").split(",")
+    # Return the first origin that is not localhost if available, or just the first one.
+    # Logic: In prod, CORS_ORIGINS="https://myapp.vercel.app". In dev, "http://localhost:5173".
+    if cors_origins and cors_origins[0]:
+        return cors_origins[0].strip()
+    return "http://localhost:5173"
