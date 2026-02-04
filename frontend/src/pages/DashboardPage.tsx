@@ -32,6 +32,7 @@ export default function DashboardPage() {
     const { code, token } = useParams<{ code: string; token: string }>();
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'unanswered' | 'answered'>('unanswered');
+    const [sortBy, setSortBy] = useState<'top' | 'latest'>('top');
     const [replyingTo, setReplyingTo] = useState<Question | null>(null);
     const [replyText, setReplyText] = useState('');
 
@@ -80,7 +81,15 @@ export default function DashboardPage() {
     if (isLoading) return <div className="flex h-screen items-center justify-center">Loading Dashboard...</div>;
     if (error) return <div className="flex h-screen items-center justify-center text-destructive">Access Denied or Room Not Found</div>;
 
-    const filteredQuestions = questions.filter(q =>
+    const sortedQuestions = [...questions].sort((a, b) => {
+        if (sortBy === 'top') {
+            if (b.votes !== a.votes) return b.votes - a.votes;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    const filteredQuestions = sortedQuestions.filter(q =>
         activeTab === 'answered' ? q.is_answered : !q.is_answered
     );
 
@@ -146,6 +155,27 @@ export default function DashboardPage() {
                     >
                         In Queue ({questions.filter(q => !q.is_answered).length})
                     </Button>
+                    <Button
+                        variant={activeTab === 'answered' ? 'default' : 'ghost'}
+                        onClick={() => setActiveTab('answered')}
+                    >
+                        Answered ({questions.filter(q => q.is_answered).length})
+                    </Button>
+
+                    <div className="ml-auto flex bg-gray-100 rounded-md p-1">
+                        <button
+                            onClick={() => setSortBy('top')}
+                            className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'top' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
+                        >
+                            Top
+                        </button>
+                        <button
+                            onClick={() => setSortBy('latest')}
+                            className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'latest' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
+                        >
+                            Latest
+                        </button>
+                    </div>
                     <Button
                         variant={activeTab === 'answered' ? 'default' : 'ghost'}
                         onClick={() => setActiveTab('answered')}
