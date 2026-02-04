@@ -118,9 +118,17 @@ export default function DashboardPage() {
 
                 <div className="bg-white p-4 rounded-lg border flex flex-col items-center text-center">
                     <p className="text-sm font-medium mb-2">Audience Scan</p>
-                    <div className="bg-gray-200 w-32 h-32 rounded-md flex items-center justify-center text-xs text-muted-foreground">
-                        QR Code
-                    </div>
+                    {room.qr_code ? (
+                        <img
+                            src={`data:image/png;base64,${room.qr_code}`}
+                            alt="Room QR Code"
+                            className="w-32 h-32"
+                        />
+                    ) : (
+                        <div className="bg-gray-200 w-32 h-32 rounded-md flex items-center justify-center text-xs text-muted-foreground">
+                            No QR Code
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-auto pt-4 border-t text-xs text-muted-foreground">
