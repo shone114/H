@@ -145,7 +145,6 @@ export default function RoomPage() {
                 setMyQuestionIds(newIds);
                 localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
             }
-            toast.success('Question sent!');
         },
         onError: (_err, _vars, context) => {
             if (context?.previousQuestions) {

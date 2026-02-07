@@ -126,7 +126,7 @@ export default function DashboardPage() {
             return { previousData };
         },
         onSuccess: () => {
-            toast.success('Reply sent!');
+            // Background update
         },
         onError: (err, variables, context) => {
             if (context?.previousData) {
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             return { previousData };
         },
         onSuccess: () => {
-            toast.success('Marked as answered');
+            // Background update
         },
         onError: (err, variables, context) => {
             if (context?.previousData) {
@@ -202,7 +202,7 @@ export default function DashboardPage() {
             return { previousData };
         },
         onSuccess: () => {
-            toast.success('Session updated');
+            // Background update
         },
         onError: (err, variables, context) => {
             if (context?.previousData) {
