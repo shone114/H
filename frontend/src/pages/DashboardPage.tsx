@@ -93,24 +93,81 @@ export default function DashboardPage() {
 
     // --- Mutations ---
 
+    // --- Mutations ---
+
     const replyMutation = useMutation({
         mutationFn: async () => {
             if (!replyingTo) return;
             await api.post(`/api/organizer/${code}/${token}/reply/${replyingTo.id}`, { reply_text: replyText });
         },
-        onSuccess: () => {
+        onMutate: async () => {
+            // Instant Feedback
+            const currentReplyingTo = replyingTo;
+            const currentReplyText = replyText;
+
             setReplyingTo(null);
             setReplyText('');
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
+
+            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
+            const previousData = queryClient.getQueryData(['dashboard', code, token]);
+
+            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    questions: old.questions.map((q: Question) =>
+                        q.id === currentReplyingTo?.id
+                            ? { ...q, organizer_reply: currentReplyText, is_answered: true } // Assuming reply marks as answered? actually usually separate but let's just update reply
+                            : q
+                    )
+                };
+            });
+
+            return { previousData };
+        },
+        onSuccess: () => {
             toast.success('Reply sent!');
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousData) {
+                queryClient.setQueryData(['dashboard', code, token], context.previousData);
+            }
+            toast.error('Failed to send reply');
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
         }
     });
 
     const markAnsweredMutation = useMutation({
         mutationFn: (questionId: string) => api.post(`/api/organizer/${code}/${token}/mark_answered/${questionId}`),
+        onMutate: async (questionId) => {
+            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
+            const previousData = queryClient.getQueryData(['dashboard', code, token]);
+
+            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    questions: old.questions.map((q: Question) =>
+                        q.id === questionId ? { ...q, is_answered: true } : q
+                    )
+                };
+            });
+
+            return { previousData };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
             toast.success('Marked as answered');
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousData) {
+                queryClient.setQueryData(['dashboard', code, token], context.previousData);
+            }
+            toast.error('Failed to update status');
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
         }
     });
 
@@ -121,10 +178,40 @@ export default function DashboardPage() {
                 params: { token, minutes }
             });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
+        onMutate: async ({ action, minutes }) => {
+            // Instant Feedback
             setShowExtendModal(false);
-            toast.success('Session status updated');
+
+            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
+            const previousData = queryClient.getQueryData(['dashboard', code, token]);
+
+            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
+                if (!old) return old;
+                let newRoom = { ...old.room };
+
+                if (action === 'start') newRoom.status = 'LIVE';
+                if (action === 'end') newRoom.status = 'ENDED';
+                if (action === 'extend' && minutes) {
+                    const currentExpiry = new Date(newRoom.expires_at).getTime();
+                    newRoom.expires_at = new Date(currentExpiry + minutes * 60000).toISOString();
+                }
+
+                return { ...old, room: newRoom };
+            });
+
+            return { previousData };
+        },
+        onSuccess: () => {
+            toast.success('Session updated');
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousData) {
+                queryClient.setQueryData(['dashboard', code, token], context.previousData);
+            }
+            toast.error('Failed to update session');
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
         }
     });
 
@@ -253,7 +340,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Primary Actions */}
-                        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
 
                             {/* Present & Share */}
                             <div className="flex items-center bg-ink-grey p-1 rounded-lg border border-soft-border mr-2">
@@ -332,7 +419,7 @@ export default function DashboardPage() {
                                     variant={activeTab === 'unanswered' ? 'secondary' : 'ghost'}
                                     size="sm"
                                     onClick={() => setActiveTab('unanswered')}
-                                    className={cn("rounded-full", activeTab === 'unanswered' ? "bg-soft-indigo/20 text-soft-indigo hover:bg-soft-indigo/30" : "text-gentle-grey hover:text-soft-white")}
+                                    className={cn("rounded-full transition-colors", activeTab === 'unanswered' ? "bg-soft-indigo/20 text-soft-indigo hover:bg-soft-indigo/30" : "text-gentle-grey hover:text-soft-white hover:bg-white/5")}
                                 >
                                     In Queue <Badge className="ml-2 bg-soft-charcoal/50 text-inherit border-0">{questions.filter(q => !q.is_answered).length}</Badge>
                                 </Button>
@@ -340,7 +427,7 @@ export default function DashboardPage() {
                                     variant={activeTab === 'answered' ? 'secondary' : 'ghost'}
                                     size="sm"
                                     onClick={() => setActiveTab('answered')}
-                                    className={cn("rounded-full", activeTab === 'answered' ? "bg-muted-mint/20 text-muted-mint hover:bg-muted-mint/30" : "text-gentle-grey hover:text-soft-white")}
+                                    className={cn("rounded-full transition-colors", activeTab === 'answered' ? "bg-muted-mint/20 text-muted-mint hover:bg-muted-mint/30" : "text-gentle-grey hover:text-soft-white hover:bg-white/5")}
                                 >
                                     Answered <Badge className="ml-2 bg-soft-charcoal/50 text-inherit border-0">{questions.filter(q => q.is_answered).length}</Badge>
                                 </Button>

@@ -112,6 +112,8 @@ export default function RoomPage() {
     const postMutation = useMutation({
         mutationFn: (content: string) => api.post(`/api/rooms/${code}/questions`, { content, voter_id: voterId }),
         onMutate: async (content) => {
+            setNewQuestion(''); // Instant Clear
+
             await queryClient.cancelQueries({ queryKey: ['questions', room?.id] });
             const previousQuestions = queryClient.getQueryData<Question[]>(['questions', room?.id, sortBy]);
 
@@ -130,17 +132,18 @@ export default function RoomPage() {
                 queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], newData);
             }
 
+            // scroll instantly
+            if (sortBy === 'latest') {
+                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
+            }
+
             return { previousQuestions };
         },
         onSuccess: (newQ) => {
-            setNewQuestion('');
             if (newQ && newQ.data && newQ.data.id) {
                 const newIds = [...myQuestionIds, newQ.data.id];
                 setMyQuestionIds(newIds);
                 localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
-            }
-            if (sortBy === 'latest') {
-                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
             }
             toast.success('Question sent!');
         },
