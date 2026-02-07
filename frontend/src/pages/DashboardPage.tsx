@@ -26,6 +26,7 @@ interface Room {
     code: string;
     expires_at: string;
     qr_code?: string;
+    status: 'WAITING' | 'LIVE' | 'ENDED';
 }
 
 export default function DashboardPage() {
@@ -78,10 +79,23 @@ export default function DashboardPage() {
     });
 
     const markAnsweredMutation = useMutation({
-        mutationFn: (questionId: string) => api.post(`/api/organizer/${code}/${token}/mark_answered/${questionId}`),
+        mutationFn: (questionId: string) => api.post(`/api/rooms/${code}/${token}/questions/${questionId}/mark_answered`), // Fixed endpoint path
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
             toast.success('Marked as answered');
+        }
+    });
+
+    const sessionControlMutation = useMutation({
+        mutationFn: async (action: 'start' | 'end' | 'extend') => {
+            await api.post(`/api/rooms/${code}/${action}`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }, // Verify token logic
+                params: { token } // Pass token as query param since backend expects it
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
+            toast.success('Session status updated');
         }
     });
 
@@ -155,7 +169,7 @@ export default function DashboardPage() {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden h-screen">
-                <header className="bg-white border-b p-4 flex items-center gap-4">
+                <header className="bg-white border-b p-4 flex items-center gap-4 sticky top-0 z-10">
                     <Button
                         variant={activeTab === 'unanswered' ? 'default' : 'ghost'}
                         onClick={() => setActiveTab('unanswered')}
@@ -169,19 +183,55 @@ export default function DashboardPage() {
                         Answered ({questions.filter(q => q.is_answered).length})
                     </Button>
 
-                    <div className="ml-auto flex bg-gray-100 rounded-md p-1">
-                        <button
-                            onClick={() => setSortBy('top')}
-                            className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'top' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
-                        >
-                            Top
-                        </button>
-                        <button
-                            onClick={() => setSortBy('latest')}
-                            className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'latest' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
-                        >
-                            Latest
-                        </button>
+                    <div className="ml-auto flex items-center gap-2">
+                        {/* Session Controls */}
+                        {room?.status === 'WAITING' && (
+                            <Button
+                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm animate-pulse"
+                                onClick={() => sessionControlMutation.mutate('start')}
+                                disabled={sessionControlMutation.isPending}
+                            >
+                                GO LIVE 🔴
+                            </Button>
+                        )}
+                        {room?.status === 'LIVE' && (
+                            <>
+                                <Button
+                                    className="bg-red-500 hover:bg-red-600 text-white shadow-sm"
+                                    onClick={() => sessionControlMutation.mutate('end')}
+                                    disabled={sessionControlMutation.isPending}
+                                >
+                                    End Session
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => sessionControlMutation.mutate('extend')}
+                                    disabled={sessionControlMutation.isPending}
+                                >
+                                    +15 Min
+                                </Button>
+                            </>
+                        )}
+                        {room?.status === 'ENDED' && (
+                            <Badge variant="destructive" className="px-4 py-2 text-sm">SESSION ENDED</Badge>
+                        )}
+
+                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+                        <div className="flex bg-gray-100 rounded-md p-1">
+                            <button
+                                onClick={() => setSortBy('top')}
+                                className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'top' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
+                            >
+                                Top
+                            </button>
+                            <button
+                                onClick={() => setSortBy('latest')}
+                                className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${sortBy === 'latest' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-gray-900'}`}
+                            >
+                                Latest
+                            </button>
+                        </div>
                     </div>
 
                 </header>

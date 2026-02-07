@@ -30,6 +30,7 @@ interface Room {
     created_at: string;
     starts_at: string;
     expires_at: string;
+    status: 'WAITING' | 'LIVE' | 'ENDED';
 }
 
 export default function RoomPage() {
@@ -87,11 +88,17 @@ export default function RoomPage() {
     const { lastMessage } = useRoomSocket(room?.id);
 
     // 4. Handle Real-time Updates
+    // 4. Handle Real-time Updates
     useEffect(() => {
         if (lastMessage && room?.id) {
+            // If status changed or extended, refresh room details
+            if (lastMessage.type === 'ROOM_STATUS_UPDATE' || lastMessage.type === 'ROOM_EXTENDED') {
+                queryClient.invalidateQueries({ queryKey: ['room', code] });
+            }
+            // Refresh questions for typical messages
             queryClient.invalidateQueries({ queryKey: ['questions', room.id] });
         }
-    }, [lastMessage, queryClient, room?.id]);
+    }, [lastMessage, queryClient, room?.id, code]);
 
     // Scroll to bottom only on strict 'latest' mode switch
     useEffect(() => {
@@ -182,34 +189,34 @@ export default function RoomPage() {
         </div>
     );
 
-    const now = new Date();
-    const startsAt = room ? new Date(room.starts_at) : new Date();
-    const isUpcoming = startsAt > now;
-    const isExpired = room ? new Date(room.expires_at) < new Date() : false;
-
-    if (isUpcoming) {
+    if (room?.status === 'WAITING') {
         return (
-            <div className="min-h-screen bg-soft-charcoal flex items-center justify-center p-4 text-soft-white">
+            <div className="min-h-screen bg-soft-charcoal flex items-center justify-center p-4 text-soft-white animate-in fade-in duration-700">
                 <Card className="w-full max-w-md text-center bg-ink-grey border-soft-border shadow-md rounded-3xl">
                     <CardContent className="space-y-6 pt-10 pb-10">
-                        <div className="bg-soft-indigo/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center ring-1 ring-soft-indigo/30">
-                            <Clock className="w-10 h-10 text-soft-indigo" />
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-soft-indigo/20 blur-xl rounded-full animate-pulse"></div>
+                            <div className="relative bg-soft-indigo/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center ring-1 ring-soft-indigo/30">
+                                <Clock className="w-10 h-10 text-soft-indigo" />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <p className="text-xs text-gentle-grey uppercase tracking-widest font-bold">Starts At</p>
-                            <p className="text-3xl font-bold text-soft-white tracking-tight">
-                                {startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                            <p className="text-gentle-grey font-medium">{startsAt.toLocaleDateString()}</p>
+                            <p className="text-xs text-gentle-grey uppercase tracking-widest font-bold">Waiting for Host</p>
+                            <h2 className="text-2xl font-bold text-soft-white">{room.title}</h2>
+                            <p className="text-gentle-grey font-medium">The session will begin shortly.</p>
                         </div>
-                        <p className="text-sm text-muted-text max-w-[200px] mx-auto leading-relaxed">
-                            The room will open automatically when the session begins.
-                        </p>
+                        <div className="flex justify-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-soft-indigo/50 animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-2 h-2 rounded-full bg-soft-indigo/50 animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-2 h-2 rounded-full bg-soft-indigo/50 animate-bounce"></span>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
         );
     }
+
+
 
     const questions = (initialQuestions || []).filter(q => {
         if (sortBy === 'answered') return q.is_answered;
@@ -317,8 +324,8 @@ export default function RoomPage() {
                                         {/* Vote Button */}
                                         <div className="flex-none pt-1">
                                             <button
-                                                onClick={() => !hasVoted && !isExpired && voteMutation.mutate(q.id)}
-                                                disabled={hasVoted || isExpired || voteMutation.isPending}
+                                                onClick={() => !hasVoted && room?.status === 'LIVE' && voteMutation.mutate(q.id)}
+                                                disabled={hasVoted || room?.status !== 'LIVE' || voteMutation.isPending}
                                                 className={cn(
                                                     "flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl transition-all border",
                                                     hasVoted
@@ -369,7 +376,7 @@ export default function RoomPage() {
             {/* 3. Input Footer (Floating Capsule) */}
             <footer className="flex-none fixed bottom-6 left-0 right-0 px-4 z-50 pointer-events-none">
                 <div className="max-w-5xl mx-auto pointer-events-auto">
-                    {isExpired ? (
+                    {room?.status === 'ENDED' ? (
                         <div className="bg-ink-grey/90 backdrop-blur-md rounded-full border border-soft-border p-4 text-center text-muted-text shadow-lg">
                             <span className="flex items-center justify-center gap-2 font-medium">
                                 <Clock className="w-4 h-4" /> This session has ended.

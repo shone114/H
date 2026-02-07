@@ -14,6 +14,7 @@ class Room(Base):
     starts_at = Column(DateTime(timezone=True), nullable=False, default=utils.get_utc_now)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
+    status = Column(String, default="WAITING") # WAITING, LIVE, ENDED
 
     questions = relationship("Question", back_populates="room")
 

@@ -23,7 +23,7 @@ class RoomResponse(BaseModel):
     starts_at: datetime
     expires_at: datetime
     is_active: bool
-    is_active: bool
+    status: str
     # organizer_token is NOT returned here for security, only on creation response
 
     # Pydantic will serialize aware datetimes as ISO 8601 strings automatically

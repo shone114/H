@@ -9,6 +9,7 @@ from models import Room
 from schemas import RoomCreate, RoomCreatedResponse, RoomResponse
 from utils import generate_room_code, generate_organizer_token, get_utc_now, generate_qr_code_base64
 from security import get_room_by_code, check_room_expiration
+from connection_manager import manager
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
 
@@ -31,7 +32,8 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
         title=room_in.title,
         organizer_token=organizer_token,
         starts_at=room_in.starts_at,
-        expires_at=room_in.expires_at
+        expires_at=room_in.expires_at,
+        status="WAITING" # Explicit default
     )
     
     db.add(new_room)
@@ -39,9 +41,7 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_room)
 
     # Generate QR Code
-    # In prod, this URL would be dynamic based on the frontend deployment
-    # For now we use a placeholder or relative path that frontend handles
-    join_url = f"https://hushhour.app/r/{code}" # or get from env
+    join_url = f"https://hushhour.app/r/{code}"
     qr_base64 = generate_qr_code_base64(join_url)
 
     return RoomCreatedResponse(
@@ -52,6 +52,7 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
         starts_at=new_room.starts_at,
         expires_at=new_room.expires_at,
         is_active=new_room.is_active,
+        status=new_room.status,
         organizer_token=organizer_token,
         qr_code=qr_base64
     )
@@ -60,5 +61,65 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
 async def get_room(
     room: Room = Depends(get_room_by_code)
 ):
-    check_room_expiration(room)
+    # If status is ENDED, we might still want to show it, but check expiration
+    # check_room_expiration(room) # Maybe relax this for manual controls? 
+    # Let's keep strict expiration for now but manual 'end' sets status.
+    return room
+
+# --- Session Controls ---
+
+@router.post("/{code}/start", response_model=RoomResponse)
+async def start_session(
+    code: str, 
+    token: str, # Organizer token required
+    db: AsyncSession = Depends(get_db)
+):
+    room = await get_room_by_code(code, db)
+    if room.organizer_token != token:
+        raise HTTPException(status_code=403, detail="Invalid organizer token")
+    
+    room.status = "LIVE"
+    await db.commit()
+    await db.refresh(room)
+    
+    await manager.broadcast({"type": "ROOM_STATUS_UPDATE", "status": "LIVE"}, room.id)
+    return room
+
+@router.post("/{code}/end", response_model=RoomResponse)
+async def end_session(
+    code: str, 
+    token: str, 
+    db: AsyncSession = Depends(get_db)
+):
+    room = await get_room_by_code(code, db)
+    if room.organizer_token != token:
+        raise HTTPException(status_code=403, detail="Invalid organizer token")
+    
+    room.status = "ENDED"
+    await db.commit()
+    await db.refresh(room)
+    
+    await manager.broadcast({"type": "ROOM_STATUS_UPDATE", "status": "ENDED"}, room.id)
+    return room
+
+@router.post("/{code}/extend", response_model=RoomResponse)
+async def extend_session(
+    code: str, 
+    token: str, 
+    minutes: int = 15,
+    db: AsyncSession = Depends(get_db)
+):
+    room = await get_room_by_code(code, db)
+    if room.organizer_token != token:
+        raise HTTPException(status_code=403, detail="Invalid organizer token")
+    
+    room.expires_at += timedelta(minutes=minutes)
+    await db.commit()
+    await db.refresh(room)
+    
+    await manager.broadcast({
+        "type": "ROOM_EXTENDED", 
+        "expires_at": room.expires_at.isoformat(),
+        "minutes_added": minutes
+    }, room.id)
     return room
