@@ -26,18 +26,12 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
 
     organizer_token = generate_organizer_token()
     
-    # Convert provided times to naive UTC for DB compatibility
-    # Frontend sends ISO string (e.g. ...Z), Pydantic parses as Aware UTC.
-    # Postgres stores Naive, so we strip tz info.
-    starts_naive = room_in.starts_at.replace(tzinfo=None)
-    expires_naive = room_in.expires_at.replace(tzinfo=None)
-    
     new_room = Room(
         code=code,
         title=room_in.title,
         organizer_token=organizer_token,
-        starts_at=starts_naive,
-        expires_at=expires_naive
+        starts_at=room_in.starts_at,
+        expires_at=room_in.expires_at
     )
     
     db.add(new_room)

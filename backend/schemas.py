@@ -23,11 +23,10 @@ class RoomResponse(BaseModel):
     starts_at: datetime
     expires_at: datetime
     is_active: bool
+    is_active: bool
     # organizer_token is NOT returned here for security, only on creation response
 
-    @field_serializer('created_at', 'starts_at', 'expires_at')
-    def serialize_dt(self, dt: datetime, _info):
-        return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
+    # Pydantic will serialize aware datetimes as ISO 8601 strings automatically
 
 class RoomCreatedResponse(RoomResponse):
     organizer_token: str
@@ -53,9 +52,8 @@ class QuestionResponse(BaseModel):
     is_answered: bool
     organizer_reply: Optional[str] = None
 
-    @field_serializer('created_at')
-    def serialize_dt(self, dt: datetime, _info):
-        return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
+    is_answered: bool
+    organizer_reply: Optional[str] = None
 
 class VoteCreate(BaseModel):
     voter_id: str
