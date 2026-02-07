@@ -59,6 +59,16 @@ export default function RoomPage() {
         }
     });
 
+    // "My Questions" Logic (Frontend-only)
+    const [myQuestionIds, setMyQuestionIds] = useState<string[]>(() => {
+        try {
+            const stored = localStorage.getItem(`my_questions_${code}`);
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
+    });
+
     // 1. Fetch Room Info
     const { data: room, isLoading: roomLoading, error: roomError } = useQuery<Room>({
         queryKey: ['room', code],
@@ -115,8 +125,13 @@ export default function RoomPage() {
 
             return { previousQuestions };
         },
-        onSuccess: () => {
+        onSuccess: (newQ) => {
             setNewQuestion('');
+            if (newQ && newQ.data && newQ.data.id) {
+                const newIds = [...myQuestionIds, newQ.data.id];
+                setMyQuestionIds(newIds);
+                localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
+            }
             if (sortBy === 'latest') {
                 setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
             }
