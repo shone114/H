@@ -49,6 +49,7 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
         code=new_room.code,
         title=new_room.title,
         created_at=new_room.created_at,
+        starts_at=new_room.starts_at,
         expires_at=new_room.expires_at,
         is_active=new_room.is_active,
         organizer_token=organizer_token,
