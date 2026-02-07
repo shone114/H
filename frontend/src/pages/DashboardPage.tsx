@@ -35,6 +35,13 @@ export default function DashboardPage() {
     const [sortBy, setSortBy] = useState<'top' | 'latest'>('top');
     const [replyingTo, setReplyingTo] = useState<Question | null>(null);
     const [replyText, setReplyText] = useState('');
+    const [now, setNow] = useState(new Date());
+
+    // Update 'now' every second to check for expiration in real-time
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Fetch Dashboard Data
     const { data, isLoading, error } = useQuery({
@@ -210,8 +217,8 @@ export default function DashboardPage() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => setReplyingTo(q)}
-                                                    disabled={new Date(room.expires_at) < new Date()}
-                                                    title={new Date(room.expires_at) < new Date() ? "Room expired" : "Reply to question"}
+                                                    disabled={new Date(room.expires_at) < now}
+                                                    title={new Date(room.expires_at) < now ? "Room expired" : "Reply to question"}
                                                 >
                                                     Reply
                                                 </Button>
@@ -219,8 +226,8 @@ export default function DashboardPage() {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => markAnsweredMutation.mutate(q.id)}
-                                                    disabled={new Date(room.expires_at) < new Date()}
-                                                    title={new Date(room.expires_at) < new Date() ? "Room expired" : "Mark as done without reply"}
+                                                    disabled={new Date(room.expires_at) < now}
+                                                    title={new Date(room.expires_at) < now ? "Room expired" : "Mark as done without reply"}
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
                                                 </Button>
