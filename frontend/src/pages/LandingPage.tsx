@@ -10,7 +10,8 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [joinCode, setJoinCode] = useState('');
     const [createTitle, setCreateTitle] = useState('');
-    const [duration, setDuration] = useState(6);
+    const [startsAt, setStartsAt] = useState('');
+    const [expiresAt, setExpiresAt] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState('');
 
@@ -32,9 +33,14 @@ export default function LandingPage() {
         setIsCreating(true);
         setError('');
         try {
+            // Convert local datetime to ISO strings
+            const startISO = new Date(startsAt).toISOString();
+            const endISO = new Date(expiresAt).toISOString();
+
             const res = await api.post('/api/rooms/', {
                 title: createTitle,
-                expires_hours: duration
+                starts_at: startISO,
+                expires_at: endISO
             });
             const { code, organizer_token } = res.data;
             navigate(`/dashboard/${code}/${organizer_token}`);
@@ -93,30 +99,34 @@ export default function LandingPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Duration</label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {[1, 6, 12, 24].map((hrs) => (
-                                        <button
-                                            key={hrs}
-                                            type="button"
-                                            onClick={() => setDuration(hrs)}
-                                            className={`
-                                                py-2 rounded-md text-sm font-medium transition-all
-                                                ${duration === hrs
-                                                    ? 'bg-primary text-white shadow-md'
-                                                    : 'bg-white text-gray-600 border hover:border-primary/50'}
-                                            `}
-                                        >
-                                            {hrs}h
-                                        </button>
-                                    ))}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground">Start Time</label>
+                                    <Input
+                                        type="datetime-local"
+                                        value={startsAt}
+                                        onChange={(e) => setStartsAt(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground">End Time</label>
+                                    <Input
+                                        type="datetime-local"
+                                        value={expiresAt}
+                                        onChange={(e) => setExpiresAt(e.target.value)}
+                                        required
+                                    />
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full" size="lg" disabled={isCreating || !createTitle.trim()}>
-                                {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                {isCreating ? 'Creating...' : 'Create Room'}
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                size="lg"
+                                disabled={isCreating || !createTitle.trim() || !startsAt || !expiresAt}
+                            >
+                                Create Room <ArrowRight className="ml-2 w-4 h-4" />
                             </Button>
                             {error && <p className="text-sm text-destructive text-center">{error}</p>}
                         </form>

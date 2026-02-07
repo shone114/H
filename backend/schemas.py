@@ -4,7 +4,14 @@ from typing import Optional, List
 
 class RoomCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=100)
-    expires_hours: int = Field(default=6, ge=1, le=24)
+    starts_at: datetime
+    expires_at: datetime
+
+    @validator('expires_at')
+    def validate_dates(cls, v, values):
+        if 'starts_at' in values and v <= values['starts_at']:
+            raise ValueError('End time must be after start time')
+        return v
 
 class RoomResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -13,11 +20,12 @@ class RoomResponse(BaseModel):
     code: str
     title: str
     created_at: datetime
+    starts_at: datetime
     expires_at: datetime
     is_active: bool
     # organizer_token is NOT returned here for security, only on creation response
 
-    @field_serializer('created_at', 'expires_at')
+    @field_serializer('created_at', 'starts_at', 'expires_at')
     def serialize_dt(self, dt: datetime, _info):
         return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
 

@@ -25,13 +25,14 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Could not generate unique room code")
 
     organizer_token = generate_organizer_token()
-    expires_at = get_utc_now() + timedelta(hours=room_in.expires_hours)
-
+    # expires_at is now passed from frontend
+    
     new_room = Room(
         code=code,
         title=room_in.title,
         organizer_token=organizer_token,
-        expires_at=expires_at
+        starts_at=room_in.starts_at,
+        expires_at=room_in.expires_at
     )
     
     db.add(new_room)

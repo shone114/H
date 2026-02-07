@@ -11,6 +11,7 @@ class Room(Base):
     title = Column(String, nullable=False)
     organizer_token = Column(String, nullable=False)
     created_at = Column(DateTime, default=utils.get_utc_now)
+    starts_at = Column(DateTime, nullable=False, default=utils.get_utc_now)
     expires_at = Column(DateTime, nullable=False)
     is_active = Column(Boolean, default=True)
 

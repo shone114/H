@@ -5,9 +5,9 @@ import { useRoomSocket } from '@/hooks/useRoomSocket';
 import { api, fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, Clock, MessageSquare } from 'lucide-react';
+import { ArrowUp, Clock, MessageSquare, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -26,6 +26,8 @@ interface Room {
     title: string;
     code: string;
     is_active: boolean;
+    created_at: string;
+    starts_at: string;
     expires_at: string;
 }
 
@@ -35,6 +37,8 @@ export default function RoomPage() {
     const queryClient = useQueryClient();
     const [sortBy, setSortBy] = useState<'top' | 'latest'>('top');
     const [newQuestion, setNewQuestion] = useState('');
+
+    // Voter ID Logic
     const [voterId] = useState(() => {
         let id = localStorage.getItem('hushhour_voter_id');
         if (!id) {
@@ -81,26 +85,18 @@ export default function RoomPage() {
     const postMutation = useMutation({
         mutationFn: (content: string) => api.post(`/api/rooms/${code}/questions`, { content, voter_id: voterId }),
         onMutate: async (content) => {
-            // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
             await queryClient.cancelQueries({ queryKey: ['questions', room?.id] });
-
-            // Snapshot the previous value
             const previousQuestions = queryClient.getQueryData<Question[]>(['questions', room?.id, sortBy]);
 
-            // Optimistically update to the new value
-            if (previousQuestions) {
-                const optimisticQuestion: Question = {
-                    id: `temp-${Date.now()}`,
-                    content,
-                    votes: 0,
-                    created_at: new Date().toISOString(),
-                    is_answered: false,
-                };
+            const optimisticQuestion: Question = {
+                id: `temp-${Date.now()}`,
+                content,
+                votes: 0,
+                created_at: new Date().toISOString(),
+                is_answered: false,
+            };
 
-                // Add to start or end based on sort? Typically new questions are at top if latest, or bottom/top if top (0 votes).
-                // Let's prepend it for immediate feedback regardless of sort, or maybe obey sort?
-                // For 'latest', prepend. For 'top', it has 0 votes, so append? 
-                // Let's just prepend to make it visible.
+            if (previousQuestions) {
                 queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], [optimisticQuestion, ...previousQuestions]);
             }
 
@@ -110,15 +106,13 @@ export default function RoomPage() {
             setNewQuestion('');
             toast.success('Question added!');
         },
-        onError: (_err, _newTodo, context) => {
-            // Rollback
+        onError: (_err, _vars, context) => {
             if (context?.previousQuestions) {
                 queryClient.setQueryData(['questions', room?.id, sortBy], context.previousQuestions);
             }
             toast.error("Failed to post question");
         },
         onSettled: () => {
-            // Always refetch after error or success to sync with server
             queryClient.invalidateQueries({ queryKey: ['questions', room?.id] });
         }
     });
@@ -126,7 +120,6 @@ export default function RoomPage() {
     const voteMutation = useMutation({
         mutationFn: (questionId: string) => api.post(`/api/rooms/${code}/questions/${questionId}/vote`, { voter_id: voterId }),
         onMutate: async (questionId) => {
-            // Optimistic Update
             const queryKey = ['questions', room?.id, sortBy];
             await queryClient.cancelQueries({ queryKey });
             const previousQuestions = queryClient.getQueryData<Question[]>(queryKey);
@@ -137,7 +130,6 @@ export default function RoomPage() {
                 ));
             }
 
-            // Optimistic local state update
             if (!votedQuestions.includes(questionId)) {
                 const newVoted = [...votedQuestions, questionId];
                 setVotedQuestions(newVoted);
@@ -146,7 +138,7 @@ export default function RoomPage() {
 
             return { previousQuestions };
         },
-        onError: (_err, _newTodo, context) => {
+        onError: (_err, _vars, context) => {
             if (context?.previousQuestions) {
                 queryClient.setQueryData(['questions', room?.id, sortBy], context.previousQuestions);
             }
@@ -164,9 +156,39 @@ export default function RoomPage() {
         </div>
     );
 
-    const questions = initialQuestions || [];
+    // Check if session is upcoming
+    const now = new Date();
+    const startsAt = room ? new Date(room.starts_at) : new Date();
+    const isUpcoming = startsAt > now;
 
-    // Check expiration locally for UI feedback
+    if (isUpcoming) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="text-2xl text-primary">Session Starting Soon</CardTitle>
+                        <CardDescription>This session hasn't started yet.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="bg-primary/5 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+                            <Clock className="w-10 h-10 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Starts At</p>
+                            <p className="text-xl font-bold mt-1">
+                                {startsAt.toLocaleDateString()} {startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            You can join the waiting room. Questions will open when the session begins.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    const questions = initialQuestions || [];
     const isExpired = room ? new Date(room.expires_at) < new Date() : false;
 
     return (
@@ -176,13 +198,18 @@ export default function RoomPage() {
                 <div className="max-w-2xl mx-auto flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{room?.title}</h1>
-                        <p className="text-xs text-muted-foreground flex items-center space-x-2">
+                        <div className="text-xs text-muted-foreground flex items-center space-x-2">
                             <span>Code: <span className="font-mono font-bold text-primary">{room?.code}</span></span>
                             {wsStatus === 'connecting' && <span className="text-yellow-500">• Connecting...</span>}
                             {wsStatus === 'disconnected' && <span className="text-destructive">• Offline</span>}
-                        </p>
+                        </div>
                     </div>
-                    {isExpired && <Badge variant="destructive">Expired</Badge>}
+                    <div className="flex flex-col items-end">
+                        {isExpired && <Badge variant="destructive">Expired</Badge>}
+                        <span className="text-xs text-muted-foreground mt-1">
+                            Ends: {room ? new Date(room.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -216,25 +243,17 @@ export default function RoomPage() {
 
                 {/* Filters */}
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        Questions <Badge variant="secondary">{questions.length}</Badge>
-                    </h2>
-                    <div className="flex bg-white rounded-md border p-1">
+                    <h2 className="text-lg font-semibold">{questions.length} Questions</h2>
+                    <div className="bg-gray-100 p-1 rounded-lg flex text-sm">
                         <button
                             onClick={() => setSortBy('top')}
-                            className={cn(
-                                "px-3 py-1 text-sm rounded-sm transition-colors",
-                                sortBy === 'top' ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-gray-100"
-                            )}
+                            className={cn("px-3 py-1 rounded-md transition-all", sortBy === 'top' ? "bg-white shadow-sm font-medium" : "text-gray-500 hover:text-gray-900")}
                         >
                             Top
                         </button>
                         <button
                             onClick={() => setSortBy('latest')}
-                            className={cn(
-                                "px-3 py-1 text-sm rounded-sm transition-colors",
-                                sortBy === 'latest' ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-gray-100"
-                            )}
+                            className={cn("px-3 py-1 rounded-md transition-all", sortBy === 'latest' ? "bg-white shadow-sm font-medium" : "text-gray-500 hover:text-gray-900")}
                         >
                             Latest
                         </button>
@@ -244,7 +263,7 @@ export default function RoomPage() {
                 {/* Questions List */}
                 <div className="space-y-4">
                     {questions.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground bg-white rounded-lg border border-dashed">
+                        <div className="text-center py-10 text-muted-foreground">
                             <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-20" />
                             <p>No questions yet. Be the first to ask!</p>
                         </div>
@@ -252,44 +271,40 @@ export default function RoomPage() {
                         questions.map((q) => {
                             const hasVoted = votedQuestions.includes(q.id);
                             return (
-                                <Card key={q.id} className={cn("transition-all", q.is_answered ? "bg-muted/30 border-l-4 border-l-green-500" : "")}>
-                                    <CardContent className="p-4 flex gap-4">
-                                        {/* Vote Button */}
-                                        <div className="flex flex-col items-center gap-1">
-                                            <button
-                                                onClick={() => !isExpired && !hasVoted && voteMutation.mutate(q.id)}
-                                                disabled={isExpired || hasVoted}
-                                                className={cn(
-                                                    "p-2 rounded-lg transition-colors flex flex-col items-center min-w-[3rem]",
-                                                    hasVoted
-                                                        ? "bg-primary text-white cursor-default"
-                                                        : "hover:bg-secondary text-primary/70 hover:text-primary"
-                                                )}
-                                            >
-                                                <ArrowUp className={cn("w-5 h-5", hasVoted && "text-white")} />
-                                                <span className="text-sm font-bold">{q.votes}</span>
-                                            </button>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex items-start justify-between gap-2">
+                                <Card key={q.id} className={cn("transition-all", q.is_answered ? "bg-gray-50/80 border-l-4 border-l-green-500" : "hover:border-primary/30")}>
+                                    <CardContent className="pt-6">
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className={cn("h-auto py-2 px-2 flex flex-col gap-1 hover:bg-transparent", hasVoted ? "text-primary" : "text-muted-foreground")}
+                                                    onClick={() => !hasVoted && !isExpired && voteMutation.mutate(q.id)}
+                                                    disabled={hasVoted || isExpired || voteMutation.isPending}
+                                                >
+                                                    <ArrowUp className={cn("w-6 h-6", hasVoted && "fill-current")} />
+                                                    <span className="font-bold text-lg">{q.votes}</span>
+                                                </Button>
+                                            </div>
+                                            <div className="flex-1 space-y-2">
                                                 <p className="text-base font-medium leading-relaxed">{q.content}</p>
-                                                {q.is_answered && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 shrink-0">Answered</Badge>}
-                                            </div>
-
-                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-
-                                            {/* Organizer Reply */}
-                                            {q.organizer_reply && (
-                                                <div className="mt-3 bg-primary/5 p-3 rounded-md border border-primary/10 text-sm">
-                                                    <p className="font-semibold text-primary mb-1 text-xs uppercase tracking-wide">Organizer Reply</p>
-                                                    <p>{q.organizer_reply}</p>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <span>{new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    {q.is_answered && (
+                                                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                                                            Answered
+                                                        </Badge>
+                                                    )}
                                                 </div>
-                                            )}
+
+                                                {/* Organizer Reply */}
+                                                {q.organizer_reply && (
+                                                    <div className="mt-3 bg-blue-50/50 p-3 rounded-md border border-blue-100 text-sm">
+                                                        <p className="font-semibold text-blue-700 text-xs mb-1">Organizer Reply:</p>
+                                                        <p className="text-gray-800">{q.organizer_reply}</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
