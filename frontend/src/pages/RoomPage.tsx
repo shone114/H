@@ -201,8 +201,7 @@ export default function RoomPage() {
             // OR Unanswered first to be voted on? 
             // User strategy: "Answered should have most visibility so people don't repeat".
             // Let's put Answered at the VERY TOP.
-            if (a.is_answered !== b.is_answered) return a.is_answered ? -1 : 1; // Answered (-1) first
-            return b.votes - a.votes;
+            if (a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1; // Answered go to bottom
         }
         // Latest: Old -> New
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -212,11 +211,12 @@ export default function RoomPage() {
         <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500/30">
             {/* 1. Header (Floating Glass) */}
             <header className="flex-none z-50 pt-4 px-4 sticky top-0">
-                <div className="max-w-4xl mx-auto bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 flex items-center justify-between shadow-2xl shadow-black/50">
-                    <div className="min-w-0 flex items-center gap-3">
+                <div className="max-w-6xl mx-auto bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 flex items-center justify-between shadow-2xl shadow-black/50">
+                    <div className="min-w-0 flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                        <div>
-                            <h1 className="text-sm font-bold text-slate-100 truncate max-w-[150px] md:max-w-xs">{room?.title}</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-sm font-bold text-slate-100 truncate max-w-[200px] md:max-w-sm">{room?.title}</h1>
+                            <Badge variant="outline" className="border-indigo-500/30 text-indigo-400 bg-indigo-500/10 font-mono tracking-wider font-bold">{room?.code}</Badge>
                         </div>
                     </div>
 
@@ -241,11 +241,7 @@ export default function RoomPage() {
 
             {/* 2. Main Content */}
             <main className="flex-1 overflow-y-auto scroll-smooth">
-                <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 pb-32">
-                    <div className="text-center mb-8 space-y-1">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Room Code</p>
-                        <p className="text-4xl font-black text-slate-200 tracking-tighter font-mono">{room?.code}</p>
-                    </div>
+                <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 pb-32">
 
                     {questions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-24 text-slate-500 text-center animate-in fade-in duration-700">
@@ -331,7 +327,7 @@ export default function RoomPage() {
 
             {/* 3. Input Footer (Floating Capsule) */}
             <footer className="flex-none fixed bottom-6 left-0 right-0 px-4 z-50 pointer-events-none">
-                <div className="max-w-3xl mx-auto pointer-events-auto">
+                <div className="max-w-5xl mx-auto pointer-events-auto">
                     {isExpired ? (
                         <div className="bg-slate-900/90 backdrop-blur-md rounded-full border border-slate-700 p-4 text-center text-slate-400 shadow-2xl">
                             <span className="flex items-center justify-center gap-2 font-medium">
