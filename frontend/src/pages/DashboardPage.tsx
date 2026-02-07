@@ -207,14 +207,20 @@ export default function DashboardPage() {
                                     <div className="flex flex-col gap-2">
                                         {!q.is_answered && (
                                             <>
-                                                <Button size="sm" onClick={() => setReplyingTo(q)}>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => setReplyingTo(q)}
+                                                    disabled={new Date(room.expires_at) < new Date()}
+                                                    title={new Date(room.expires_at) < new Date() ? "Room expired" : "Reply to question"}
+                                                >
                                                     Reply
                                                 </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => markAnsweredMutation.mutate(q.id)}
-                                                    title="Mark as done without reply"
+                                                    disabled={new Date(room.expires_at) < new Date()}
+                                                    title={new Date(room.expires_at) < new Date() ? "Room expired" : "Mark as done without reply"}
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
                                                 </Button>
