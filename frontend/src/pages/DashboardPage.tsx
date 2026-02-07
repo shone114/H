@@ -406,7 +406,7 @@ export default function DashboardPage() {
                 <div className="absolute inset-0 flex flex-col md:flex-row max-w-7xl mx-auto w-full">
 
                     {/* Questions Feed */}
-                    <div className="flex-1 flex flex-col min-w-0 border-r border-soft-border/50 bg-soft-charcoal">
+                    <div className="flex-1 flex flex-col min-w-0 min-h-0 border-r border-soft-border/50 bg-soft-charcoal">
 
                         {/* Feed Controls */}
                         <div className="flex-none p-4 border-b border-soft-border/50 flex items-center justify-between sticky top-0 bg-soft-charcoal/95 backdrop-blur-sm z-10">
