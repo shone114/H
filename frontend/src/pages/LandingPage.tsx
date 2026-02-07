@@ -104,6 +104,7 @@ export default function LandingPage() {
                                     <label className="text-sm font-medium text-muted-foreground">Start Time</label>
                                     <Input
                                         type="datetime-local"
+                                        step="60"
                                         value={startsAt}
                                         onChange={(e) => setStartsAt(e.target.value)}
                                         required
@@ -113,6 +114,7 @@ export default function LandingPage() {
                                     <label className="text-sm font-medium text-muted-foreground">End Time</label>
                                     <Input
                                         type="datetime-local"
+                                        step="60"
                                         value={expiresAt}
                                         onChange={(e) => setExpiresAt(e.target.value)}
                                         required
