@@ -294,13 +294,16 @@ export default function RoomPage() {
                             {questions.map((q) => {
                                 const hasVoted = votedQuestions.includes(q.id);
                                 const isAnswered = q.is_answered;
+                                const isMine = myQuestionIds.includes(q.id);
 
                                 return (
                                     <div key={q.id} className={cn(
                                         "group relative flex gap-4 md:gap-5 p-5 md:p-6 rounded-3xl transition-all duration-300 border animate-in slide-in-from-bottom-2",
                                         isAnswered
                                             ? "bg-muted-mint/5 border-muted-mint/20 shadow-sm" // Warm Answered State
-                                            : "bg-ink-grey border-soft-border hover:border-soft-border/80 hover:bg-[#2A2C2E] shadow-sm" // Standard Dark Card
+                                            : isMine
+                                                ? "bg-soft-indigo/5 border-soft-indigo/50 shadow-md ring-1 ring-soft-indigo/20" // "My Question" Highlight
+                                                : "bg-ink-grey border-soft-border hover:border-soft-border/80 hover:bg-[#2A2C2E] shadow-sm" // Standard Dark Card
                                     )}>
                                         {/* Answered Indicator */}
                                         {isAnswered && (
