@@ -11,7 +11,7 @@ import { ArrowUp, Clock, Send, Sparkles, Trophy, CheckCircle2 } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-// Type definitions
+// Type definitions (Vercel Redeploy Trigger)
 interface Question {
     id: string;
     content: string;
