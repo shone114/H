@@ -197,69 +197,74 @@ export default function DashboardPage() {
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <span>{new Date(q.created_at).toLocaleTimeString()}</span>
                                             {q.organizer_reply && (
-                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                                    Replied
-                                                </Badge>
+                                                <div className="mt-2 text-sm bg-blue-50/50 p-2 rounded border border-blue-100">
+                                                    <span className="font-semibold text-blue-700 text-xs">Your Reply: </span>
+                                                    <span className="text-gray-700">{q.organizer_reply}</span>
+                                                </div>
                                             )}
-                                        </div>
+                                            Replied
+                                        </Badge>
+                                            )}
                                     </div>
-                                    <div className="flex flex-col gap-2">
-                                        {!q.is_answered && (
-                                            <>
-                                                <Button size="sm" onClick={() => setReplyingTo(q)}>
-                                                    Reply
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => markAnsweredMutation.mutate(q.id)}
-                                                    title="Mark as done without reply"
-                                                >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                </Button>
-                                            </>
-                                        )}
-                                        {q.is_answered && (
-                                            <Badge variant="secondary" className="justify-center">Done</Badge>
-                                        )}
-                                    </div>
-                                </CardContent>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {!q.is_answered && (
+                                        <>
+                                            <Button size="sm" onClick={() => setReplyingTo(q)}>
+                                                Reply
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => markAnsweredMutation.mutate(q.id)}
+                                                title="Mark as done without reply"
+                                            >
+                                                <CheckCircle className="w-4 h-4" />
+                                            </Button>
+                                        </>
+                                    )}
+                                    {q.is_answered && (
+                                        <Badge variant="secondary" className="justify-center">Done</Badge>
+                                    )}
+                                </div>
+                            </CardContent>
                             </Card>
-                        ))
+                ))
                     )}
-                </div>
-            </main>
-
-            {/* Reply Modal */}
-            <Modal
-                isOpen={!!replyingTo}
-                onClose={() => setReplyingTo(null)}
-                title="Reply to Question"
-            >
-                <div className="space-y-4">
-                    <div className="bg-muted p-3 rounded-md text-sm italic">
-                        "{replyingTo?.content}"
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Your Reply</label>
-                        <Input
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="Type your answer..."
-                            autoFocus
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
-                        <Button
-                            onClick={() => replyMutation.mutate()}
-                            disabled={replyMutation.isPending || !replyText.trim()}
-                        >
-                            {replyMutation.isPending ? 'Sending...' : 'Send Reply'}
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </div>
+            </main >
+
+        {/* Reply Modal */ }
+        < Modal
+    isOpen = {!!replyingTo
+}
+onClose = {() => setReplyingTo(null)}
+title = "Reply to Question"
+    >
+    <div className="space-y-4">
+        <div className="bg-muted p-3 rounded-md text-sm italic">
+            "{replyingTo?.content}"
+        </div>
+        <div className="space-y-2">
+            <label className="text-sm font-medium">Your Reply</label>
+            <Input
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Type your answer..."
+                autoFocus
+            />
+        </div>
+        <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
+            <Button
+                onClick={() => replyMutation.mutate()}
+                disabled={replyMutation.isPending || !replyText.trim()}
+            >
+                {replyMutation.isPending ? 'Sending...' : 'Send Reply'}
+            </Button>
+        </div>
+    </div>
+            </Modal >
+        </div >
     );
 }
