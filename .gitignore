@@ -1,0 +1,15 @@
+
+# Environment
+.env
+.venv
+venv/
+__pycache__/
+
+# Sensitive Documentation
+prd.md
+tech_stack.md
+
+# Build
+dist/
+node_modules/
+.DS_Store
