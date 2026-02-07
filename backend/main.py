@@ -51,8 +51,6 @@ app.include_router(ws.router)
 async def startup_event():
     # create tables if they don't exist
     async with engine.begin() as conn:
-        # Development only: Wipe DB to handle schema changes
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/")

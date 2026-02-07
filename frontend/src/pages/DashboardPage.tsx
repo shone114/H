@@ -79,7 +79,7 @@ export default function DashboardPage() {
     });
 
     const markAnsweredMutation = useMutation({
-        mutationFn: (questionId: string) => api.post(`/api/rooms/${code}/${token}/questions/${questionId}/mark_answered`), // Fixed endpoint path
+        mutationFn: (questionId: string) => api.post(`/api/organizer/${code}/${token}/mark_answered/${questionId}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
             toast.success('Marked as answered');
@@ -267,8 +267,8 @@ export default function DashboardPage() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => setReplyingTo(q)}
-                                                    disabled={new Date(room.expires_at) < now}
-                                                    title={new Date(room.expires_at) < now ? "Room expired" : "Reply to question"}
+                                                    disabled={room.status === 'ENDED'}
+                                                    title={room.status === 'ENDED' ? "Session ended" : "Reply to question"}
                                                 >
                                                     Reply
                                                 </Button>
@@ -276,8 +276,8 @@ export default function DashboardPage() {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => markAnsweredMutation.mutate(q.id)}
-                                                    disabled={new Date(room.expires_at) < now}
-                                                    title={new Date(room.expires_at) < now ? "Room expired" : "Mark as done without reply"}
+                                                    disabled={room.status === 'ENDED'}
+                                                    title={room.status === 'ENDED' ? "Session ended" : "Mark as done without reply"}
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
                                                 </Button>
