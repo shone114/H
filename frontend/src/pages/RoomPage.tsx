@@ -188,7 +188,15 @@ export default function RoomPage() {
         );
     }
 
-    const questions = initialQuestions || [];
+    const questions = (initialQuestions || []).sort((a, b) => {
+        // 1. Status: Unanswered first
+        if (a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1;
+
+        // 2. Secondary Sort (User Selection)
+        if (sortBy === 'top') return b.votes - a.votes;
+        // latest
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
     const isExpired = room ? new Date(room.expires_at) < new Date() : false;
 
     return (
