@@ -35,7 +35,7 @@ export default function RoomPage() {
     const { code } = useParams<{ code: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const [sortBy, setSortBy] = useState<'top' | 'latest'>('top');
+    const [sortBy, setSortBy] = useState<'top' | 'latest' | 'answered'>('top');
     const [newQuestion, setNewQuestion] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -195,10 +195,14 @@ export default function RoomPage() {
         );
     }
 
-    const questions = (initialQuestions || []).sort((a, b) => {
-        if (sortBy === 'top') {
-            // Answered go to bottom
-            if (a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1;
+    const questions = (initialQuestions || []).filter(q => {
+        if (sortBy === 'answered') return q.is_answered;
+        return true;
+    }).sort((a, b) => {
+        if (sortBy === 'top' || sortBy === 'answered') {
+            // For 'answered' tab, we just sort by votes (or we could do time). Let's do votes.
+            // For 'top', we push answered to bottom.
+            if (sortBy === 'top' && a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1;
             return b.votes - a.votes;
         }
         // Latest: Old -> New
@@ -235,7 +239,7 @@ export default function RoomPage() {
                                     className={cn("px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
                                         sortBy === 'top' ? "bg-soft-border text-soft-white shadow-sm" : "text-gentle-grey hover:bg-soft-border/50 hover:text-soft-white")}
                                 >
-                                    <Trophy className="w-3 h-3" /> <span className="hidden sm:inline">Popular</span><span className="sm:hidden">Top</span>
+                                    <Trophy className="w-3 h-3" /> Top
                                 </button>
                                 <button
                                     onClick={() => setSortBy('latest')}
@@ -243,6 +247,13 @@ export default function RoomPage() {
                                         sortBy === 'latest' ? "bg-soft-border text-soft-white shadow-sm" : "text-gentle-grey hover:bg-soft-border/50 hover:text-soft-white")}
                                 >
                                     <Clock className="w-3 h-3" /> <span className="hidden sm:inline">Latest</span><span className="sm:hidden">New</span>
+                                </button>
+                                <button
+                                    onClick={() => setSortBy('answered')}
+                                    className={cn("px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
+                                        sortBy === 'answered' ? "bg-muted-mint/20 text-muted-mint shadow-sm border border-muted-mint/20" : "text-gentle-grey hover:bg-soft-border/50 hover:text-soft-white")}
+                                >
+                                    <CheckCircle2 className="w-3 h-3" /> <span className="hidden sm:inline">Answered</span><span className="sm:hidden">Done</span>
                                 </button>
                             </div>
                         </div>
