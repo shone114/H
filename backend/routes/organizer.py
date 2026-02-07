@@ -88,6 +88,10 @@ async def mark_answered(
     room: Room = Depends(verify_organizer_token),
     db: AsyncSession = Depends(get_db)
 ):
+    # Verify room is active
+    from security import check_room_expiration
+    check_room_expiration(room)
+
     result = await db.execute(select(Question).where(Question.id == question_id, Question.room_id == room.id))
     question = result.scalars().first()
     

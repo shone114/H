@@ -267,8 +267,8 @@ export default function DashboardPage() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => setReplyingTo(q)}
-                                                    disabled={room.status === 'ENDED'}
-                                                    title={room.status === 'ENDED' ? "Session ended" : "Reply to question"}
+                                                    disabled={room.status === 'ENDED' || new Date(room.expires_at) < now}
+                                                    title={room.status === 'ENDED' ? "Session ended" : new Date(room.expires_at) < now ? "Time expired" : "Reply to question"}
                                                 >
                                                     Reply
                                                 </Button>
@@ -276,8 +276,8 @@ export default function DashboardPage() {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => markAnsweredMutation.mutate(q.id)}
-                                                    disabled={room.status === 'ENDED'}
-                                                    title={room.status === 'ENDED' ? "Session ended" : "Mark as done without reply"}
+                                                    disabled={room.status === 'ENDED' || new Date(room.expires_at) < now}
+                                                    title={room.status === 'ENDED' ? "Session ended" : new Date(room.expires_at) < now ? "Time expired" : "Mark as done without reply"}
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
                                                 </Button>
