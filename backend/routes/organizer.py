@@ -45,6 +45,10 @@ async def reply_question(
     room: Room = Depends(verify_organizer_token),
     db: AsyncSession = Depends(get_db)
 ):
+    # Verify room is active
+    from security import check_room_expiration
+    check_room_expiration(room)
+
     # Verify question exists
     result = await db.execute(select(Question).where(Question.id == question_id, Question.room_id == room.id))
     question = result.scalars().first()
