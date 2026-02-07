@@ -17,7 +17,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
                 className={cn(
-                    "relative w-full max-w-lg rounded-lg bg-background p-6 shadow-lg animate-in zoom-in-95 duration-200",
+                    "relative w-full max-w-lg rounded-xl bg-ink-grey border border-soft-border text-soft-white p-6 shadow-2xl animate-in zoom-in-95 duration-200",
                     className
                 )}
             >

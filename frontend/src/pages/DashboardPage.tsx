@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    ArrowUp,
+    ArrowLeft,
     Share2,
     CheckCircle2,
     Clock,
@@ -424,7 +424,7 @@ export default function DashboardPage() {
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            className="border-soft-border text-gentle-grey hover:text-soft-white hover:bg-soft-border"
+                                                            className="bg-transparent border-soft-border text-gentle-grey hover:text-soft-white hover:bg-soft-border"
                                                             onClick={() => markAnsweredMutation.mutate(q.id)}
                                                             disabled={areControlsLocked}
                                                             title={areControlsLocked ? "Session locked" : "Mark as done"}
@@ -537,9 +537,9 @@ export default function DashboardPage() {
                 <div className="fixed inset-0 z-[60] bg-soft-charcoal flex flex-col items-center justify-center animate-in fade-in duration-300">
                     <button
                         onClick={() => setShowProjectModal(false)}
-                        className="absolute top-6 right-6 p-2 bg-ink-grey rounded-full text-gentle-grey hover:text-white"
+                        className="absolute top-6 left-6 p-2 bg-ink-grey rounded-full text-gentle-grey hover:text-white border border-soft-border"
                     >
-                        <MinimizeIcon className="w-6 h-6" />
+                        <ArrowLeft className="w-6 h-6" />
                     </button>
 
                     <div className="flex flex-col items-center justify-center space-y-12 animate-in zoom-in-95 duration-500 w-full max-w-4xl px-4">
@@ -559,14 +559,14 @@ export default function DashboardPage() {
                         <div className="flex flex-wrap justify-center gap-4 pt-4">
                             <Button
                                 variant="outline"
-                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
+                                className="bg-transparent border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
                                 onClick={handleShareQR}
                             >
                                 <Share2 className="w-5 h-5" /> Share QR
                             </Button>
                             <Button
                                 variant="outline"
-                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
+                                className="bg-transparent border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
                                 onClick={() => {
                                     const link = document.createElement('a');
                                     link.href = `data:image/png;base64,${qrCode}`;
@@ -580,9 +580,7 @@ export default function DashboardPage() {
 
                     </div>
 
-                    <div className="absolute bottom-8 text-muted-text text-sm">
-                        Press ESC to close
-                    </div>
+
                 </div>
             )}
         </div>
