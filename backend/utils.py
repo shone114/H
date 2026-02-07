@@ -16,7 +16,7 @@ def generate_organizer_token() -> str:
     return str(uuid.uuid4())
 
 def get_utc_now() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 def generate_qr_code_base64(data: str) -> str:
     """Generates a QR code and returns it as a base64 encoded string."""

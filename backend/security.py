@@ -42,9 +42,13 @@ async def verify_organizer_token(
     
     return room
 
+from utils import get_utc_now
+
 def check_room_expiration(room: Room):
     """Helper to raise error if room is expired."""
-    if room.expires_at < datetime.datetime.utcnow():
+    # Ensure both datetimes are timezone-aware
+    now = get_utc_now()
+    if room.expires_at < now:
         raise HTTPException(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail="Room has expired"
