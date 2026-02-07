@@ -144,12 +144,18 @@ export default function RoomPage() {
         },
         onSuccess: (newQ, _variables, context) => {
             if (newQ && newQ.data && newQ.data.id) {
+                // Update Local State with Real ID
                 setMyQuestionIds(prev => {
-                    // Remove temp ID, add real ID
                     const filtered = prev.filter(id => id !== context.optimisticId);
                     const newIds = [...filtered, newQ.data.id];
                     localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
                     return newIds;
+                });
+
+                // Update Cache with Real ID to prevent flicker
+                queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], (old) => {
+                    if (!old) return old;
+                    return old.map(q => q.id === context.optimisticId ? newQ.data : q);
                 });
             }
         },

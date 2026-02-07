@@ -96,15 +96,11 @@ export default function DashboardPage() {
     // --- Mutations ---
 
     const replyMutation = useMutation({
-        mutationFn: async () => {
-            if (!replyingTo) return;
-            await api.post(`/api/organizer/${code}/${token}/reply/${replyingTo.id}`, { reply_text: replyText });
+        mutationFn: async ({ questionId, text }: { questionId: string, text: string }) => {
+            await api.post(`/api/organizer/${code}/${token}/reply/${questionId}`, { reply_text: text });
         },
-        onMutate: async () => {
+        onMutate: async ({ questionId, text }) => {
             // Instant Feedback
-            const currentReplyingTo = replyingTo;
-            const currentReplyText = replyText;
-
             setReplyingTo(null);
             setReplyText('');
 
@@ -116,8 +112,8 @@ export default function DashboardPage() {
                 return {
                     ...old,
                     questions: old.questions.map((q: Question) =>
-                        q.id === currentReplyingTo?.id
-                            ? { ...q, organizer_reply: currentReplyText, is_answered: true } // Assuming reply marks as answered? actually usually separate but let's just update reply
+                        q.id === questionId
+                            ? { ...q, organizer_reply: text, is_answered: true }
                             : q
                     )
                 };
@@ -556,7 +552,7 @@ export default function DashboardPage() {
                     <div className="flex justify-end gap-3">
                         <Button variant="ghost" onClick={() => setReplyingTo(null)} className="text-gentle-grey hover:text-soft-white">Cancel</Button>
                         <Button
-                            onClick={() => replyMutation.mutate()}
+                            onClick={() => replyMutation.mutate({ questionId: replyingTo!.id, text: replyText })}
                             disabled={replyMutation.isPending || !replyText.trim()}
                             className="bg-soft-indigo hover:bg-soft-indigo/90 text-white"
                         >
