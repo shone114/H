@@ -11,7 +11,17 @@ load_dotenv()
 app = FastAPI(title="HushHour API")
 
 # CORS Configuration
-origins = os.getenv("CORS_ORIGINS", "").split(",")
+# CORS Configuration
+# Fallback to wildcard or specific domains if env var is missing
+env_origins = os.getenv("CORS_ORIGINS", "").split(",")
+origins = [o.strip() for o in env_origins if o.strip()]
+# Add known frontend origins explicitly
+origins.extend([
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "https://h-nine-gules.vercel.app",
+    "https://hushhour.app",
+])
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,9 +33,13 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request, call_next):
-    print(f"Request: {request.method} {request.url}")
-    response = await call_next(request)
-    return response
+    print(f"Request: {request.method} {request.url}", flush=True)
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        print(f"Request failed: {str(e)}", flush=True)
+        raise e
 
 # Include Routers
 app.include_router(rooms.router)
