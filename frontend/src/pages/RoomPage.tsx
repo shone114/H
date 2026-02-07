@@ -207,9 +207,9 @@ export default function RoomPage() {
 
     return (
         <div className="flex flex-col h-[100dvh] bg-off-white text-p-text font-sans selection:bg-lavender selection:text-p-text">
-            {/* 1. Header (Responsive, Soft Blue) */}
-            <header className="flex-none z-50 pt-3 px-3 sticky top-0">
-                <div className="max-w-6xl mx-auto bg-soft-blue/95 backdrop-blur-md rounded-2xl md:rounded-full px-4 py-3 shadow-sm border border-soft-blue/20">
+            {/* 1. Header (Responsive, Soft Blue, Full Width) */}
+            <header className="flex-none z-50 sticky top-0 bg-soft-blue shadow-sm border-b border-soft-blue/20">
+                <div className="w-full max-w-6xl mx-auto px-4 py-3">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
 
                         {/* Title & Status */}
@@ -217,8 +217,8 @@ export default function RoomPage() {
                             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)] flex-shrink-0"></div>
                             <div className="min-w-0">
                                 <h1 className="text-sm md:text-base font-bold text-white truncate leading-tight">{room?.title}</h1>
-                                <div className="flex items-center gap-2 md:hidden mt-0.5">
-                                    <span className="text-[10px] font-mono text-white/80 bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{room?.code}</span>
+                                <div>
+                                    <span className="md:hidden text-[10px] font-mono text-white/80 bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{room?.code}</span>
                                 </div>
                             </div>
                             {/* Desktop Code Badge */}
