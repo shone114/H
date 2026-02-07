@@ -133,8 +133,8 @@ export default function DashboardPage() {
     const handleShareLink = async () => {
         const joinUrl = `${window.location.origin}/r/${code}`;
         const shareData = {
-            title: `Join my HushHour Session: ${room.title}`,
-            text: `Ask me anything! Join the live Q&A session for "${room.title}" using code ${room.code}.`,
+            title: `Join Q&A: ${room.title}`,
+            text: `Join the Q&A session for "${room.title}" on HushHour. Use code: ${room.code}`,
             url: joinUrl,
         };
 
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                                     </Badge>
                                 </div>
                                 <div className="flex items-center gap-3 text-xs font-medium">
-                                    {room.status === 'WAITING' && <span className="text-yellow-400 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />Waiting for Host</span>}
+                                    {room.status === 'WAITING' && <span className="text-yellow-400 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />Ready to Start</span>}
                                     {room.status === 'LIVE' && <span className="text-green-400 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />LIVE NOW</span>}
                                     {room.status === 'ENDED' && <span className="text-red-400 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-400" />Session Ended</span>}
 
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                                     className="text-gentle-grey hover:text-soft-white hover:bg-soft-border h-8 gap-2"
                                     onClick={() => setShowProjectModal(true)}
                                 >
-                                    <Maximize2 className="w-4 h-4" /> <span className="hidden sm:inline">Show QR</span>
+                                    <Maximize2 className="w-4 h-4" /> <span>Show QR</span>
                                 </Button>
                                 <div className="w-px h-4 bg-soft-border mx-1"></div>
                                 <Button
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                                     className="text-gentle-grey hover:text-soft-white hover:bg-soft-border h-8 gap-2"
                                     onClick={handleShareLink}
                                 >
-                                    <Share2 className="w-4 h-4" /> <span className="hidden sm:inline">Share</span>
+                                    <Share2 className="w-4 h-4" /> <span>Share</span>
                                 </Button>
                             </div>
 
@@ -542,38 +542,31 @@ export default function DashboardPage() {
                         <MinimizeIcon className="w-6 h-6" />
                     </button>
 
-                    <div className="text-center space-y-8 animate-in zoom-in-95 duration-500">
-                        <h2 className="text-3xl md:text-5xl font-bold text-soft-white tracking-tight">{room.title}</h2>
+                    <div className="flex flex-col items-center justify-center space-y-12 animate-in zoom-in-95 duration-500 w-full max-w-4xl px-4">
+                        <h2 className="text-4xl md:text-7xl font-bold text-soft-white tracking-tight text-center leading-tight">{room.title}</h2>
 
-                        <div className="relative group perspective-1000">
-                            <div className="absolute inset-0 bg-soft-indigo/20 blur-3xl rounded-full animate-pulse group-hover:bg-soft-indigo/30 transition-all"></div>
+                        <div className="relative group perspective-1000 flex justify-center">
+                            <div className="absolute inset-0 bg-soft-indigo/20 blur-3xl rounded-full animate-pulse opacity-50"></div>
                             {qrCode && (
                                 <img
                                     src={`data:image/png;base64,${qrCode}`}
                                     alt="Room QR Code"
-                                    className="relative w-64 h-64 md:w-96 md:h-96 rounded-3xl border-4 border-soft-white shadow-2xl transition-transform transform group-hover:scale-105"
+                                    className="relative w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-3xl border-8 border-soft-white shadow-2xl"
                                 />
                             )}
                         </div>
 
-                        <div className="space-y-4">
-                            <p className="text-xl md:text-2xl text-gentle-grey font-medium">Scan to join or visit</p>
-                            <div className="inline-block bg-ink-grey px-8 py-4 rounded-full border border-soft-border shadow-lg">
-                                <span className="text-2xl md:text-3xl font-mono font-bold text-soft-indigo tracking-wider">hushhour.app/r/{room.code}</span>
-                            </div>
-                        </div>
-
-                        <div className="pt-8 flex justify-center gap-4">
+                        <div className="flex flex-wrap justify-center gap-4 pt-4">
                             <Button
                                 variant="outline"
-                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-6 rounded-full gap-2"
+                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
                                 onClick={handleShareQR}
                             >
-                                <Share2 className="w-5 h-5" /> Share QR Image
+                                <Share2 className="w-5 h-5" /> Share QR
                             </Button>
                             <Button
                                 variant="outline"
-                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-6 rounded-full gap-2"
+                                className="border-soft-border text-soft-white hover:bg-soft-border h-12 px-8 rounded-full gap-2 text-lg"
                                 onClick={() => {
                                     const link = document.createElement('a');
                                     link.href = `data:image/png;base64,${qrCode}`;
@@ -588,7 +581,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="absolute bottom-8 text-muted-text text-sm">
-                        Press ESC or click close to return to dashboard
+                        Press ESC to close
                     </div>
                 </div>
             )}
