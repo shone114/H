@@ -30,6 +30,12 @@ export default function LandingPage() {
         e.preventDefault();
         if (!createTitle.trim()) return;
 
+        // Client-side validation
+        if (new Date(expiresAt) <= new Date(startsAt)) {
+            setError('End time must be after start time');
+            return;
+        }
+
         setIsCreating(true);
         setError('');
         try {
@@ -44,9 +50,14 @@ export default function LandingPage() {
             });
             const { code, organizer_token } = res.data;
             navigate(`/dashboard/${code}/${organizer_token}`);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('Failed to create room. Please try again.');
+            const msg = err.response?.data?.detail
+                ? (Array.isArray(err.response.data.detail)
+                    ? err.response.data.detail[0].msg
+                    : err.response.data.detail)
+                : 'Failed to create room. Please try again.';
+            setError(msg);
         } finally {
             setIsCreating(false);
         }
