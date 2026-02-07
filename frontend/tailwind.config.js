@@ -10,14 +10,16 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			colors: {
-				// "Calm & Trust" Palette
-				'soft-blue': '#8BBBD9',
-				'off-white': '#F7F8FA',
-				'lavender': '#D9D2F0',
-				'sage-green': '#BBD4B1',
-				'p-text': '#2D2E32', // Primary Text
-				's-text': '#6A6E73', // Secondary Text
-				'soft-border': '#E3E5E8',
+				// "Warm Dark" Palette
+				'soft-charcoal': '#1B1D1F', // Background
+				'ink-grey': '#232527',      // Cards/Panels
+				'soft-indigo': '#8E9AFE',   // Secondary Accent
+				'washed-blue': '#A6B1FF',   // Primary Accent
+				'muted-mint': '#86D7B0',    // Success
+				'soft-white': '#E8E9EC',    // Primary Text
+				'gentle-grey': '#A9ACB2',   // Secondary Text
+				'muted-text': '#6F737A',    // Muted Text
+				'soft-border': '#2E3032',   // Borders
 
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',

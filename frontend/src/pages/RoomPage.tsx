@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, Clock, Send, Sparkles, Trophy, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ArrowUp, Clock, Send, Sparkles, Trophy, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -158,11 +158,11 @@ export default function RoomPage() {
         }
     });
 
-    if (roomLoading) return <div className="flex h-screen items-center justify-center bg-off-white text-s-text">Loading Room...</div>;
+    if (roomLoading) return <div className="flex h-screen items-center justify-center bg-soft-charcoal text-gentle-grey">Loading Room...</div>;
     if (roomError) return (
-        <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-off-white text-p-text">
-            <h1 className="text-2xl font-bold text-red-500">Room not found or expired</h1>
-            <Button variant="outline" className="text-p-text rounded-full border-soft" onClick={() => navigate('/')}>Go Home</Button>
+        <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-soft-charcoal text-soft-white">
+            <h1 className="text-2xl font-bold text-red-400">Room not found or expired</h1>
+            <Button variant="outline" className="text-soft-white border-soft-border hover:bg-ink-grey rounded-full" onClick={() => navigate('/')}>Go Home</Button>
         </div>
     );
 
@@ -173,20 +173,20 @@ export default function RoomPage() {
 
     if (isUpcoming) {
         return (
-            <div className="min-h-screen bg-off-white flex items-center justify-center p-4 text-p-text">
-                <Card className="w-full max-w-md text-center bg-white border-soft shadow-sm rounded-3xl">
+            <div className="min-h-screen bg-soft-charcoal flex items-center justify-center p-4 text-soft-white">
+                <Card className="w-full max-w-md text-center bg-ink-grey border-soft-border shadow-md rounded-3xl">
                     <CardContent className="space-y-6 pt-10 pb-10">
-                        <div className="bg-soft-blue/20 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center ring-1 ring-soft-blue/50">
-                            <Clock className="w-10 h-10 text-soft-blue" />
+                        <div className="bg-soft-indigo/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center ring-1 ring-soft-indigo/30">
+                            <Clock className="w-10 h-10 text-soft-indigo" />
                         </div>
                         <div className="space-y-2">
-                            <p className="text-xs text-s-text uppercase tracking-widest font-bold">Starts At</p>
-                            <p className="text-3xl font-bold text-p-text tracking-tight">
+                            <p className="text-xs text-gentle-grey uppercase tracking-widest font-bold">Starts At</p>
+                            <p className="text-3xl font-bold text-soft-white tracking-tight">
                                 {startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
-                            <p className="text-s-text font-medium">{startsAt.toLocaleDateString()}</p>
+                            <p className="text-gentle-grey font-medium">{startsAt.toLocaleDateString()}</p>
                         </div>
-                        <p className="text-sm text-s-text max-w-[200px] mx-auto leading-relaxed">
+                        <p className="text-sm text-muted-text max-w-[200px] mx-auto leading-relaxed">
                             The room will open automatically when the session begins.
                         </p>
                     </CardContent>
@@ -197,7 +197,7 @@ export default function RoomPage() {
 
     const questions = (initialQuestions || []).sort((a, b) => {
         if (sortBy === 'top') {
-            // Answered go to bottom (Logic restored)
+            // Answered go to bottom
             if (a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1;
             return b.votes - a.votes;
         }
@@ -206,40 +206,41 @@ export default function RoomPage() {
     });
 
     return (
-        <div className="flex flex-col h-[100dvh] bg-off-white text-p-text font-sans selection:bg-lavender selection:text-p-text">
-            {/* 1. Header (Responsive, Soft Blue, Full Width) */}
-            <header className="flex-none z-50 sticky top-0 bg-soft-blue shadow-sm border-b border-soft-blue/20">
+        <div className="flex flex-col h-[100dvh] bg-soft-charcoal text-soft-white font-sans selection:bg-washed-blue/30 selection:text-soft-white">
+
+            {/* 1. Integrated Header (Full Width, Soft Charcoal) */}
+            <header className="flex-none z-50 sticky top-0 bg-soft-charcoal/95 backdrop-blur-md border-b border-soft-border shadow-sm">
                 <div className="w-full max-w-6xl mx-auto px-4 py-3">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
 
                         {/* Title & Status */}
                         <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)] flex-shrink-0"></div>
+                            <div className="w-2.5 h-2.5 rounded-full bg-muted-mint animate-pulse shadow-[0_0_8px_rgba(134,215,176,0.4)] flex-shrink-0"></div>
                             <div className="min-w-0">
-                                <h1 className="text-sm md:text-base font-bold text-white truncate leading-tight">{room?.title}</h1>
+                                <h1 className="text-sm md:text-base font-bold text-soft-white truncate leading-tight">{room?.title}</h1>
                                 <div>
-                                    <span className="md:hidden text-[10px] font-mono text-white/80 bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{room?.code}</span>
+                                    <span className="md:hidden text-[10px] font-mono text-gentle-grey bg-ink-grey px-1.5 py-0.5 rounded uppercase tracking-wider">{room?.code}</span>
                                 </div>
                             </div>
                             {/* Desktop Code Badge */}
-                            <span className="hidden md:inline-flex text-[11px] font-mono font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-full tracking-wider shadow-sm border border-white/10">{room?.code}</span>
+                            <span className="hidden md:inline-flex text-[11px] font-mono font-bold text-gentle-grey bg-ink-grey px-2 py-0.5 rounded-full tracking-wider border border-soft-border">{room?.code}</span>
                         </div>
 
                         {/* Controls */}
                         <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-                            <span className="text-xs text-white/70 font-medium md:hidden">Sort by:</span>
-                            <div className="flex items-center gap-1 bg-white/10 p-1 rounded-full border border-white/10">
+                            <span className="text-xs text-muted-text font-medium md:hidden">Sort by:</span>
+                            <div className="flex items-center gap-1 bg-ink-grey p-1 rounded-full border border-soft-border">
                                 <button
                                     onClick={() => setSortBy('top')}
                                     className={cn("px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
-                                        sortBy === 'top' ? "bg-white text-soft-blue shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white")}
+                                        sortBy === 'top' ? "bg-soft-border text-soft-white shadow-sm" : "text-gentle-grey hover:bg-soft-border/50 hover:text-soft-white")}
                                 >
                                     <Trophy className="w-3 h-3" /> <span className="hidden sm:inline">Popular</span><span className="sm:hidden">Top</span>
                                 </button>
                                 <button
                                     onClick={() => setSortBy('latest')}
                                     className={cn("px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
-                                        sortBy === 'latest' ? "bg-white text-soft-blue shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white")}
+                                        sortBy === 'latest' ? "bg-soft-border text-soft-white shadow-sm" : "text-gentle-grey hover:bg-soft-border/50 hover:text-soft-white")}
                                 >
                                     <Clock className="w-3 h-3" /> <span className="hidden sm:inline">Latest</span><span className="sm:hidden">New</span>
                                 </button>
@@ -252,15 +253,14 @@ export default function RoomPage() {
             {/* 2. Main Content */}
             <main className="flex-1 overflow-y-auto scroll-smooth">
                 <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 pb-32">
-                    {/* Optional: Descriptive Text or Announcement if needed, utilizing whitespace */}
-
+                    {/* Empty State */}
                     {questions.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-24 text-s-text text-center animate-in fade-in duration-700">
-                            <div className="bg-white p-8 rounded-full mb-6 shadow-sm border border-soft-border ring-4 ring-off-white">
-                                <Sparkles className="w-12 h-12 text-lavender" />
+                        <div className="flex flex-col items-center justify-center py-24 text-muted-text text-center animate-in fade-in duration-700">
+                            <div className="bg-ink-grey p-8 rounded-full mb-6 shadow-sm border border-soft-border ring-4 ring-soft-charcoal">
+                                <Sparkles className="w-12 h-12 text-washed-blue" />
                             </div>
-                            <h3 className="text-xl font-bold text-p-text mb-2">It's quiet in here...</h3>
-                            <p className="max-w-xs mx-auto text-s-text text-sm">Be the first to ask! Your question is safe here.</p>
+                            <h3 className="text-xl font-bold text-soft-white mb-2">It's quiet in here...</h3>
+                            <p className="max-w-xs mx-auto text-gentle-grey text-sm">Be the first to ask! Your question is safe here.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -272,13 +272,13 @@ export default function RoomPage() {
                                     <div key={q.id} className={cn(
                                         "group relative flex gap-4 md:gap-5 p-5 md:p-6 rounded-3xl transition-all duration-300 border animate-in slide-in-from-bottom-2",
                                         isAnswered
-                                            ? "bg-sage-green/10 border-sage-green/40 shadow-sm" // Calm Answered State
-                                            : "bg-white border-soft-border hover:border-soft-blue/30 hover:shadow-md" // Standard State
+                                            ? "bg-muted-mint/5 border-muted-mint/20 shadow-sm" // Warm Answered State
+                                            : "bg-ink-grey border-soft-border hover:border-soft-border/80 hover:bg-[#2A2C2E] shadow-sm" // Standard Dark Card
                                     )}>
                                         {/* Answered Indicator */}
                                         {isAnswered && (
                                             <div className="absolute top-4 right-4 md:top-6 md:right-6">
-                                                <Badge className="bg-sage-green text-green-900 border-0 shadow-sm rounded-full px-3 py-1 flex gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide opacity-90">
+                                                <Badge className="bg-muted-mint/10 text-muted-mint border-muted-mint/20 border shadow-none rounded-full px-3 py-1 flex gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide opacity-90">
                                                     <CheckCircle2 className="w-3 h-3" /> Answered
                                                 </Badge>
                                             </div>
@@ -292,8 +292,8 @@ export default function RoomPage() {
                                                 className={cn(
                                                     "flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl transition-all border",
                                                     hasVoted
-                                                        ? "bg-lavender border-lavender/50 text-indigo-900 shadow-sm scale-105"
-                                                        : "bg-off-white border-transparent text-s-text hover:bg-lavender/30 hover:text-p-text hover:scale-105"
+                                                        ? "bg-soft-indigo/20 border-soft-indigo/40 text-soft-indigo shadow-[0_0_15px_-5px_rgba(142,154,254,0.3)] scale-105"
+                                                        : "bg-soft-charcoal border-transparent text-muted-text hover:bg-soft-border hover:text-soft-white hover:scale-105"
                                                 )}
                                             >
                                                 <ArrowUp className={cn("w-5 h-5 md:w-6 md:h-6 mb-0.5", hasVoted && "fill-current")} />
@@ -303,27 +303,27 @@ export default function RoomPage() {
 
                                         {/* Question Content */}
                                         <div className="flex-1 min-w-0 space-y-2">
-                                            <div className="prose prose-sm max-w-none">
+                                            <div className="prose prose-invert prose-sm max-w-none">
                                                 <p className={cn(
                                                     "text-base md:text-lg leading-relaxed font-medium transition-colors",
-                                                    isAnswered ? "text-p-text opacity-80" : "text-p-text"
+                                                    isAnswered ? "text-gentle-grey" : "text-soft-white"
                                                 )}>
                                                     {q.content}
                                                 </p>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-medium text-s-text/70 uppercase tracking-wide">
+                                            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-medium text-muted-text uppercase tracking-wide">
                                                 <span>{new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
 
                                             {/* Organizer Reply */}
                                             {q.organizer_reply && (
-                                                <div className="mt-3 bg-white/50 border border-lavender/50 rounded-2xl p-4 md:p-5 relative overflow-hidden">
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-lavender"></div>
+                                                <div className="mt-3 bg-soft-charcoal/50 border border-washed-blue/20 rounded-2xl p-4 md:p-5 relative overflow-hidden">
+                                                    <div className="absolute top-0 left-0 w-1 h-full bg-washed-blue"></div>
                                                     <div className="flex items-center gap-2 mb-1.5">
-                                                        <Badge variant="secondary" className="bg-lavender/30 text-indigo-900 hover:bg-lavender/40 border-0 rounded-full px-2 py-0 text-[10px] font-bold">HOST REPLY</Badge>
+                                                        <Badge variant="secondary" className="bg-washed-blue/10 text-washed-blue hover:bg-washed-blue/20 border-0 rounded-full px-2 py-0 text-[10px] font-bold">HOST REPLY</Badge>
                                                     </div>
-                                                    <p className="text-s-text text-sm leading-relaxed">{q.organizer_reply}</p>
+                                                    <p className="text-gentle-grey text-sm leading-relaxed">{q.organizer_reply}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -340,7 +340,7 @@ export default function RoomPage() {
             <footer className="flex-none fixed bottom-6 left-0 right-0 px-4 z-50 pointer-events-none">
                 <div className="max-w-5xl mx-auto pointer-events-auto">
                     {isExpired ? (
-                        <div className="bg-white/80 backdrop-blur-md rounded-full border border-soft-border p-4 text-center text-s-text shadow-lg">
+                        <div className="bg-ink-grey/90 backdrop-blur-md rounded-full border border-soft-border p-4 text-center text-muted-text shadow-lg">
                             <span className="flex items-center justify-center gap-2 font-medium">
                                 <Clock className="w-4 h-4" /> This session has ended.
                             </span>
@@ -354,21 +354,21 @@ export default function RoomPage() {
                             className="relative group"
                         >
                             {/* Gentle Glow */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-soft-blue/20 to-lavender/30 rounded-full opacity-60 group-focus-within:opacity-100 transition duration-700 blur-md"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-soft-indigo/10 to-washed-blue/10 rounded-full opacity-0 group-focus-within:opacity-100 transition duration-700 blur-md"></div>
 
-                            <div className="relative flex items-center bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-soft-border group-focus-within:border-soft-blue/50 transition-all">
+                            <div className="relative flex items-center bg-ink-grey rounded-full shadow-lg border border-soft-border group-focus-within:border-soft-indigo/50 transition-all">
                                 <Input
                                     placeholder="Type your question anonymously..."
                                     value={newQuestion}
                                     onChange={(e) => setNewQuestion(e.target.value)}
-                                    className="w-full bg-transparent border-0 text-p-text placeholder:text-s-text/70 rounded-full pl-6 pr-16 py-7 text-base md:text-lg focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    className="w-full bg-transparent border-0 text-soft-white placeholder:text-muted-text rounded-full pl-6 pr-16 py-7 text-base md:text-lg focus-visible:ring-0 focus-visible:ring-offset-0"
                                     disabled={postMutation.isPending}
                                 />
                                 <Button
                                     type="submit"
                                     size="icon"
                                     disabled={postMutation.isPending || !newQuestion.trim()}
-                                    className="absolute right-2 h-10 w-10 rounded-full bg-soft-blue hover:bg-[#7BAFD4] text-white shadow-md transition-all active:scale-95"
+                                    className="absolute right-2 h-10 w-10 rounded-full bg-soft-indigo hover:bg-[#7D8BEF] text-white shadow-[0_0_15px_-3px_rgba(142,154,254,0.3)] transition-all active:scale-95"
                                 >
                                     <Send className="w-5 h-5 ml-0.5" />
                                 </Button>
