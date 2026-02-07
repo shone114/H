@@ -132,18 +132,25 @@ export default function RoomPage() {
                 queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], newData);
             }
 
+            // Optimistic "My Question" Glow
+            setMyQuestionIds(prev => [...prev, optimisticQuestion.id]);
+
             // scroll instantly
             if (sortBy === 'latest') {
                 setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
             }
 
-            return { previousQuestions };
+            return { previousQuestions, optimisticId: optimisticQuestion.id };
         },
-        onSuccess: (newQ) => {
+        onSuccess: (newQ, _variables, context) => {
             if (newQ && newQ.data && newQ.data.id) {
-                const newIds = [...myQuestionIds, newQ.data.id];
-                setMyQuestionIds(newIds);
-                localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
+                setMyQuestionIds(prev => {
+                    // Remove temp ID, add real ID
+                    const filtered = prev.filter(id => id !== context.optimisticId);
+                    const newIds = [...filtered, newQ.data.id];
+                    localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
+                    return newIds;
+                });
             }
         },
         onError: (_err, _vars, context) => {
