@@ -25,14 +25,19 @@ async def create_room(room_in: RoomCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Could not generate unique room code")
 
     organizer_token = generate_organizer_token()
-    # expires_at is now passed from frontend
+    
+    # Convert provided times to naive UTC for DB compatibility
+    # Frontend sends ISO string (e.g. ...Z), Pydantic parses as Aware UTC.
+    # Postgres stores Naive, so we strip tz info.
+    starts_naive = room_in.starts_at.replace(tzinfo=None)
+    expires_naive = room_in.expires_at.replace(tzinfo=None)
     
     new_room = Room(
         code=code,
         title=room_in.title,
         organizer_token=organizer_token,
-        starts_at=room_in.starts_at,
-        expires_at=room_in.expires_at
+        starts_at=starts_naive,
+        expires_at=expires_naive
     )
     
     db.add(new_room)

@@ -37,8 +37,6 @@ app.include_router(ws.router)
 async def startup_event():
     # create tables if they don't exist
     async with engine.begin() as conn:
-        # WARNING: This wipes the DB on startup. Removed after first deploy.
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/")
