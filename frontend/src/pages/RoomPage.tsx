@@ -7,6 +7,7 @@ import { ArrowUp, Clock, Send, Sparkles, Trophy, CheckCircle2 } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { useRoomLogic } from '@/hooks/useRoomLogic';
 
+// Force new deployment
 export default function RoomPage() {
     const { code } = useParams<{ code: string }>();
     const {
