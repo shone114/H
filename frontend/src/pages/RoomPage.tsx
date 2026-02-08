@@ -176,14 +176,14 @@ export default function RoomPage() {
                                         <div className="flex-1 min-w-0 space-y-2">
                                             <div className="prose prose-invert prose-sm max-w-none">
                                                 <p className={cn(
-                                                    "text-base md:text-lg leading-relaxed font-medium transition-colors",
-                                                    isAnswered ? "text-gentle-grey" : "text-soft-white"
+                                                    "text-base md:text-lg leading-relaxed font-medium transition-colors break-words",
+                                                    isAnswered ? "text-gentle-grey pr-20 md:pr-0" : "text-soft-white"
                                                 )}>
                                                     {q.content}
                                                 </p>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-medium text-muted-text uppercase tracking-wide">
+                                            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-medium text-muted-text uppercase tracking-wide mt-2">
                                                 <span>{new Date(q.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
 

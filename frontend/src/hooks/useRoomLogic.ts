@@ -116,7 +116,7 @@ export function useRoomLogic(code: string | undefined) {
                     return newIds;
                 });
 
-                // Update Cache with Real ID
+                // Update Cache with Real ID silently
                 queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], (old) => {
                     if (!old) return old as Question[];
                     return (old as Question[]).map(q => q.id === context.optimisticId ? newQ.data : q);
@@ -128,9 +128,6 @@ export function useRoomLogic(code: string | undefined) {
                 queryClient.setQueryData(['questions', room?.id, sortBy], context.previousQuestions);
             }
             toast.error("Failed to post question");
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['questions', room?.id] });
         }
     });
 
@@ -155,8 +152,10 @@ export function useRoomLogic(code: string | undefined) {
 
             return { previousQuestions };
         },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['questions', room?.id] });
+        onError: (_err, _vars, context) => {
+            if (context?.previousQuestions) {
+                queryClient.setQueryData(['questions', room?.id, sortBy], context.previousQuestions);
+            }
         }
     });
 
