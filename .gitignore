@@ -8,6 +8,7 @@ __pycache__/
 # Sensitive Documentation
 prd.md
 tech_stack.md
+code-simplifier.md
 
 # Build
 dist/

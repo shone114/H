@@ -1,200 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRoomSocket } from '@/hooks/useRoomSocket';
-import { api, fetcher } from '@/lib/api';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUp, Clock, Send, Sparkles, Trophy, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-
-// Type definitions (Vercel Redeploy Trigger)
-// is this good now ?
-interface Question {
-    id: string;
-    content: string;
-    votes: number;
-    created_at: string;
-    is_answered: boolean;
-    organizer_reply?: string;
-}
-
-interface Room {
-    id: string;
-    title: string;
-    code: string;
-    is_active: boolean;
-    created_at: string;
-    starts_at: string;
-    expires_at: string;
-    status: 'WAITING' | 'LIVE' | 'ENDED';
-}
+import { useRoomLogic } from '@/hooks/useRoomLogic';
 
 export default function RoomPage() {
     const { code } = useParams<{ code: string }>();
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
-    const [sortBy, setSortBy] = useState<'top' | 'latest' | 'answered'>('top');
-    const [newQuestion, setNewQuestion] = useState('');
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    // Voter ID Logic
-    const [voterId] = useState(() => {
-        let id = localStorage.getItem('hushhour_voter_id');
-        if (!id) {
-            id = crypto.randomUUID();
-            localStorage.setItem('hushhour_voter_id', id);
-        }
-        return id;
-    });
-
-    const [votedQuestions, setVotedQuestions] = useState<string[]>(() => {
-        try {
-            const stored = localStorage.getItem(`voted_${code}`);
-            return stored ? JSON.parse(stored) : [];
-        } catch {
-            return [];
-        }
-    });
-
-    // "My Questions" Logic (Frontend-only)
-    const [myQuestionIds, setMyQuestionIds] = useState<string[]>(() => {
-        try {
-            const stored = localStorage.getItem(`my_questions_${code}`);
-            return stored ? JSON.parse(stored) : [];
-        } catch {
-            return [];
-        }
-    });
-
-    // 1. Fetch Room Info
-    const { data: room, isLoading: roomLoading, error: roomError } = useQuery<Room>({
-        queryKey: ['room', code],
-        queryFn: () => fetcher(`/api/rooms/${code}`),
-        retry: false,
-    });
-
-    // 2. Fetch Questions
-    const { data: initialQuestions } = useQuery<Question[]>({
-        queryKey: ['questions', room?.id, sortBy],
-        queryFn: () => fetcher(`/api/rooms/${code}/questions?sort=${sortBy}`),
-        enabled: !!room?.id,
-    });
-
-    // 3. Setup WebSocket
-    const { lastMessage } = useRoomSocket(room?.id);
-
-    // 4. Handle Real-time Updates
-    // 4. Handle Real-time Updates
-    useEffect(() => {
-        if (lastMessage && room?.id) {
-            // If status changed or extended, refresh room details
-            if (lastMessage.type === 'ROOM_STATUS_UPDATE' || lastMessage.type === 'ROOM_EXTENDED') {
-                queryClient.invalidateQueries({ queryKey: ['room', code] });
-            }
-            // Refresh questions for typical messages
-            queryClient.invalidateQueries({ queryKey: ['questions', room.id] });
-        }
-    }, [lastMessage, queryClient, room?.id, code]);
-
-    // Scroll to bottom only on strict 'latest' mode switch
-    useEffect(() => {
-        if (sortBy === 'latest') {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [sortBy]);
-
-
-    // Mutations
-    const postMutation = useMutation({
-        mutationFn: (content: string) => api.post(`/api/rooms/${code}/questions`, { content, voter_id: voterId }),
-        onMutate: async (content) => {
-            setNewQuestion(''); // Instant Clear
-
-            await queryClient.cancelQueries({ queryKey: ['questions', room?.id] });
-            const previousQuestions = queryClient.getQueryData<Question[]>(['questions', room?.id, sortBy]);
-
-            const optimisticQuestion: Question = {
-                id: `temp-${Date.now()}`,
-                content,
-                votes: 0,
-                created_at: new Date().toISOString(),
-                is_answered: false,
-            };
-
-            if (previousQuestions) {
-                const newData = sortBy === 'latest'
-                    ? [...previousQuestions, optimisticQuestion] // Latest: Append (Chat style)
-                    : [optimisticQuestion, ...previousQuestions]; // Top: Prepend (Newest)
-                queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], newData);
-            }
-
-            // Optimistic "My Question" Glow
-            setMyQuestionIds(prev => [...prev, optimisticQuestion.id]);
-
-            // scroll instantly
-            if (sortBy === 'latest') {
-                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
-            }
-
-            return { previousQuestions, optimisticId: optimisticQuestion.id };
-        },
-        onSuccess: (newQ, _variables, context) => {
-            if (newQ && newQ.data && newQ.data.id) {
-                // Update Local State with Real ID
-                setMyQuestionIds(prev => {
-                    const filtered = prev.filter(id => id !== context.optimisticId);
-                    const newIds = [...filtered, newQ.data.id];
-                    localStorage.setItem(`my_questions_${code}`, JSON.stringify(newIds));
-                    return newIds;
-                });
-
-                // Update Cache with Real ID to prevent flicker
-                queryClient.setQueryData<Question[]>(['questions', room?.id, sortBy], (old) => {
-                    if (!old) return old;
-                    return old.map(q => q.id === context.optimisticId ? newQ.data : q);
-                });
-            }
-        },
-        onError: (_err, _vars, context) => {
-            if (context?.previousQuestions) {
-                queryClient.setQueryData(['questions', room?.id, sortBy], context.previousQuestions);
-            }
-            toast.error("Failed to post question");
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['questions', room?.id] });
-        }
-    });
-
-    const voteMutation = useMutation({
-        mutationFn: (questionId: string) => api.post(`/api/rooms/${code}/questions/${questionId}/vote`, { voter_id: voterId }),
-        onMutate: async (questionId) => {
-            const queryKey = ['questions', room?.id, sortBy];
-            await queryClient.cancelQueries({ queryKey });
-            const previousQuestions = queryClient.getQueryData<Question[]>(queryKey);
-
-            if (previousQuestions) {
-                queryClient.setQueryData<Question[]>(queryKey, previousQuestions.map(q =>
-                    q.id === questionId ? { ...q, votes: q.votes + 1 } : q
-                ));
-            }
-
-            if (!votedQuestions.includes(questionId)) {
-                const newVoted = [...votedQuestions, questionId];
-                setVotedQuestions(newVoted);
-                localStorage.setItem(`voted_${code}`, JSON.stringify(newVoted));
-            }
-
-            return { previousQuestions };
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['questions', room?.id] });
-        }
-    });
+    const {
+        room,
+        roomLoading,
+        roomError,
+        questions,
+        sortBy,
+        setSortBy,
+        newQuestion,
+        setNewQuestion,
+        postQuestion,
+        isPosting,
+        voteQuestion,
+        isVoting,
+        votedQuestions,
+        myQuestionIds,
+        messagesEndRef,
+        navigate
+    } = useRoomLogic(code);
 
     if (roomLoading) return <div className="flex h-screen items-center justify-center bg-soft-charcoal text-gentle-grey">Loading Room...</div>;
     if (roomError) return (
@@ -231,21 +63,8 @@ export default function RoomPage() {
         );
     }
 
-
-
-    const questions = (initialQuestions || []).filter(q => {
-        if (sortBy === 'answered') return q.is_answered;
-        return true;
-    }).sort((a, b) => {
-        if (sortBy === 'top' || sortBy === 'answered') {
-            // For 'answered' tab, we just sort by votes (or we could do time). Let's do votes.
-            // For 'top', we push answered to bottom.
-            if (sortBy === 'top' && a.is_answered !== b.is_answered) return a.is_answered ? 1 : -1;
-            return b.votes - a.votes;
-        }
-        // Latest: Old -> New
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
+    const isExpired = room ? new Date(room.expires_at) < new Date() : false;
+    const isEnded = room?.status === 'ENDED';
 
     return (
         <div className="flex flex-col h-[100dvh] bg-soft-charcoal text-soft-white font-sans selection:bg-washed-blue/30 selection:text-soft-white">
@@ -339,8 +158,8 @@ export default function RoomPage() {
                                         {/* Vote Button */}
                                         <div className="flex-none pt-1">
                                             <button
-                                                onClick={() => !hasVoted && room?.status === 'LIVE' && voteMutation.mutate(q.id)}
-                                                disabled={hasVoted || room?.status !== 'LIVE' || voteMutation.isPending}
+                                                onClick={() => !hasVoted && room?.status === 'LIVE' && voteQuestion(q.id)}
+                                                disabled={hasVoted || room?.status !== 'LIVE' || isVoting}
                                                 className={cn(
                                                     "flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl transition-all border",
                                                     hasVoted
@@ -401,7 +220,7 @@ export default function RoomPage() {
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                if (newQuestion.trim()) postMutation.mutate(newQuestion);
+                                if (newQuestion.trim()) postQuestion(newQuestion);
                             }}
                             className="relative group"
                         >
@@ -414,12 +233,12 @@ export default function RoomPage() {
                                     value={newQuestion}
                                     onChange={(e) => setNewQuestion(e.target.value)}
                                     className="w-full bg-transparent border-0 text-soft-white placeholder:text-muted-text rounded-full pl-6 pr-16 py-7 text-base md:text-lg focus-visible:ring-0 focus-visible:ring-offset-0"
-                                    disabled={postMutation.isPending}
+                                    disabled={isPosting}
                                 />
                                 <Button
                                     type="submit"
                                     size="icon"
-                                    disabled={postMutation.isPending || !newQuestion.trim()}
+                                    disabled={isPosting || !newQuestion.trim()}
                                     className="absolute right-2 h-10 w-10 rounded-full bg-soft-indigo hover:bg-[#7D8BEF] text-white shadow-[0_0_15px_-3px_rgba(142,154,254,0.3)] transition-all active:scale-95"
                                 >
                                     <Send className="w-5 h-5 ml-0.5" />

@@ -1,8 +1,4 @@
-import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRoomSocket } from '@/hooks/useRoomSocket';
-import { api, fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +10,6 @@ import {
     Share2,
     CheckCircle2,
     Clock,
-    MoreVertical,
     Users,
     Maximize2,
     PlayCircle,
@@ -23,282 +18,47 @@ import {
     Archive,
     Download
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Question {
-    id: string;
-    content: string;
-    votes: number;
-    created_at: string;
-    is_answered: boolean;
-    organizer_reply?: string;
-}
-
-interface Room {
-    id: string;
-    title: string;
-    code: string;
-    expires_at: string;
-    qr_code?: string;
-    status: 'WAITING' | 'LIVE' | 'ENDED';
-}
+import { useDashboardLogic } from '@/hooks/useDashboardLogic';
 
 export default function DashboardPage() {
     const { code, token } = useParams<{ code: string; token: string }>();
-    const queryClient = useQueryClient();
-    const [activeTab, setActiveTab] = useState<'unanswered' | 'answered'>('unanswered');
-    const [sortBy, setSortBy] = useState<'top' | 'latest'>('top');
-
-    // UI States
-    const [replyingTo, setReplyingTo] = useState<Question | null>(null);
-    const [replyText, setReplyText] = useState('');
-    const [showProjectModal, setShowProjectModal] = useState(false);
-    const [showExtendModal, setShowExtendModal] = useState(false);
-    const [extendHours, setExtendHours] = useState('0');
-    const [extendMinutes, setExtendMinutes] = useState('15');
-
-    const [now, setNow] = useState(new Date());
-
-    // Update 'now' every second to check for expiration in real-time
-    useEffect(() => {
-        const interval = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Fetch Dashboard Data
-    const { data, isLoading, error } = useQuery({
-        queryKey: ['dashboard', code, token],
-        queryFn: () => fetcher(`/api/organizer/${code}/${token}`),
-        retry: false,
-    });
-
-    const room = data?.room as Room;
-    const questions = (data?.questions || []) as Question[];
-    const qrCode = data?.qr_code as string;
-
-    const isExpired = room ? new Date(room.expires_at) < now : false;
-    const isEnded = room?.status === 'ENDED';
-    const areControlsLocked = isEnded || isExpired;
-
-    // Real-time Updates
-    const { lastMessage } = useRoomSocket(room?.id);
-
-    useEffect(() => {
-        if (lastMessage) {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
-        }
-    }, [lastMessage, queryClient, code, token]);
-
-    // --- Mutations ---
-
-    // --- Mutations ---
-
-    const replyMutation = useMutation({
-        mutationFn: async ({ questionId, text }: { questionId: string, text: string }) => {
-            await api.post(`/api/organizer/${code}/${token}/reply/${questionId}`, { reply_text: text });
-        },
-        onMutate: async ({ questionId, text }) => {
-            // Instant Feedback
-            setReplyingTo(null);
-            setReplyText('');
-
-            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
-            const previousData = queryClient.getQueryData(['dashboard', code, token]);
-
-            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    questions: old.questions.map((q: Question) =>
-                        q.id === questionId
-                            ? { ...q, organizer_reply: text, is_answered: true }
-                            : q
-                    )
-                };
-            });
-
-            return { previousData };
-        },
-        onSuccess: () => {
-            // Background update
-        },
-        onError: (err, variables, context) => {
-            if (context?.previousData) {
-                queryClient.setQueryData(['dashboard', code, token], context.previousData);
-            }
-            toast.error('Failed to send reply');
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
-        }
-    });
-
-    const markAnsweredMutation = useMutation({
-        mutationFn: (questionId: string) => api.post(`/api/organizer/${code}/${token}/mark_answered/${questionId}`),
-        onMutate: async (questionId) => {
-            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
-            const previousData = queryClient.getQueryData(['dashboard', code, token]);
-
-            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    questions: old.questions.map((q: Question) =>
-                        q.id === questionId ? { ...q, is_answered: true } : q
-                    )
-                };
-            });
-
-            return { previousData };
-        },
-        onSuccess: () => {
-            // Background update
-        },
-        onError: (err, variables, context) => {
-            if (context?.previousData) {
-                queryClient.setQueryData(['dashboard', code, token], context.previousData);
-            }
-            toast.error('Failed to update status');
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
-        }
-    });
-
-    const sessionControlMutation = useMutation({
-        mutationFn: async ({ action, minutes }: { action: 'start' | 'end' | 'extend', minutes?: number }) => {
-            await api.post(`/api/rooms/${code}/${action}`, {}, {
-                headers: { 'Authorization': `Bearer ${token}` },
-                params: { token, minutes }
-            });
-        },
-        onMutate: async ({ action, minutes }) => {
-            // Instant Feedback
-            setShowExtendModal(false);
-
-            await queryClient.cancelQueries({ queryKey: ['dashboard', code, token] });
-            const previousData = queryClient.getQueryData(['dashboard', code, token]);
-
-            queryClient.setQueryData(['dashboard', code, token], (old: any) => {
-                if (!old) return old;
-                let newRoom = { ...old.room };
-
-                if (action === 'start') newRoom.status = 'LIVE';
-                if (action === 'end') newRoom.status = 'ENDED';
-                if (action === 'extend' && minutes) {
-                    const currentExpiry = new Date(newRoom.expires_at).getTime();
-                    newRoom.expires_at = new Date(currentExpiry + minutes * 60000).toISOString();
-                }
-
-                return { ...old, room: newRoom };
-            });
-
-            return { previousData };
-        },
-        onSuccess: () => {
-            // Background update
-        },
-        onError: (err, variables, context) => {
-            if (context?.previousData) {
-                queryClient.setQueryData(['dashboard', code, token], context.previousData);
-            }
-            toast.error('Failed to update session');
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard', code, token] });
-        }
-    });
-
-    // --- Helpers ---
-
-    const handleShareLink = async () => {
-        const joinUrl = `${window.location.origin}/r/${code}`;
-        const shareData = {
-            title: `Join Q&A: ${room.title}`,
-            text: `Join the Q&A session for "${room.title}" on HushHour. Use code: ${room.code}`,
-            url: joinUrl,
-        };
-
-        try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-                toast.success('Opened share menu');
-            } else {
-                await navigator.clipboard.writeText(joinUrl);
-                toast.success('Link copied to clipboard (Native sharing not supported)');
-            }
-        } catch (err) {
-            console.error('Error sharing:', err);
-            // Verify persistence of copy fallback
-            await navigator.clipboard.writeText(joinUrl);
-            toast.success('Link copied to clipboard');
-        }
-    };
-
-    const handleShareQR = async () => {
-        if (!qrCode) return;
-        const joinUrl = `${window.location.origin}/r/${code}`;
-
-        try {
-            // Convert Base64 to Blob
-            const byteCharacters = atob(qrCode);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'image/png' });
-            const file = new File([blob], `hushhour-qr-${code}.png`, { type: 'image/png' });
-
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: `Join ${room.title}`,
-                    text: `Scan to join the Q&A session! or visit ${joinUrl}`,
-                });
-                toast.success('Opened QR share menu');
-            } else {
-                // Fallback: Download
-                const link = document.createElement('a');
-                link.href = `data:image/png;base64,${qrCode}`;
-                link.download = `hushhour-qr-${code}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                toast.success('QR Code downloaded (Native sharing not supported)');
-            }
-        } catch (err) {
-            console.error('Error sharing QR:', err);
-            toast.error('Failed to share QR code');
-        }
-    };
-
-    const handleExtend = () => {
-        const h = parseInt(extendHours);
-        const m = parseInt(extendMinutes);
-        const totalMinutes = h * 60 + m;
-        if (totalMinutes > 0) {
-            sessionControlMutation.mutate({ action: 'extend', minutes: totalMinutes });
-        }
-    };
-
+    const {
+        room,
+        questions,
+        qrCode,
+        isLoading,
+        error,
+        activeTab,
+        setActiveTab,
+        sortBy,
+        setSortBy,
+        replyingTo,
+        setReplyingTo,
+        replyText,
+        setReplyText,
+        showProjectModal,
+        setShowProjectModal,
+        showExtendModal,
+        setShowExtendModal,
+        extendHours,
+        setExtendHours,
+        extendMinutes,
+        setExtendMinutes,
+        filteredQuestions,
+        isExpired,
+        isEnded,
+        areControlsLocked,
+        handleShareLink,
+        handleShareQR,
+        handleExtend,
+        replyMutation,
+        markAnsweredMutation,
+        sessionControlMutation
+    } = useDashboardLogic(code, token);
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-soft-charcoal text-gentle-grey">Loading Dashboard...</div>;
     if (error) return <div className="flex h-screen items-center justify-center bg-soft-charcoal text-red-400">Access Denied or Room Not Found</div>;
-
-    const sortedQuestions = [...questions].sort((a, b) => {
-        if (sortBy === 'top') {
-            if (b.votes !== a.votes) return b.votes - a.votes;
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // Tie-break with time
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // Latest
-    });
-
-    const filteredQuestions = sortedQuestions.filter(q =>
-        activeTab === 'answered' ? q.is_answered : !q.is_answered
-    );
 
     return (
         <div className="flex flex-col h-[100dvh] bg-soft-charcoal text-soft-white font-sans selection:bg-washed-blue/30 selection:text-soft-white">
@@ -390,7 +150,6 @@ export default function DashboardPage() {
                                     </Button>
                                 </>
                             )}
-                            {/* Re-open option? Currently logic doesn't support easy re-open from ENDED without DB start, but let's stick to plan. */}
                             {room.status === 'ENDED' && (
                                 <Badge variant="outline" className="h-9 px-4 border-red-500/30 text-red-400 bg-red-500/5">
                                     Finished
@@ -668,15 +427,4 @@ export default function DashboardPage() {
             )}
         </div>
     );
-}
-
-function MinimizeIcon({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-            <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-            <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-            <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-        </svg>
-    )
 }

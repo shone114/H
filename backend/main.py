@@ -11,17 +11,16 @@ load_dotenv()
 app = FastAPI(title="HushHour API")
 
 # CORS Configuration
-# CORS Configuration
-# Fallback to wildcard or specific domains if env var is missing
-env_origins = os.getenv("CORS_ORIGINS", "").split(",")
-origins = [o.strip() for o in env_origins if o.strip()]
-# Add known frontend origins explicitly
-origins.extend([
+origins = [
     "http://localhost:5173",
     "http://localhost:4173",
     "https://h-nine-gules.vercel.app",
     "https://hushhour.app",
-])
+]
+
+# Add env origins if present
+if env_origins := os.getenv("CORS_ORIGINS"):
+    origins.extend([o.strip() for o in env_origins.split(",") if o.strip()])
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,13 +32,9 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request, call_next):
+    # Simple request logging
     print(f"Request: {request.method} {request.url}", flush=True)
-    try:
-        response = await call_next(request)
-        return response
-    except Exception as e:
-        print(f"Request failed: {str(e)}", flush=True)
-        raise e
+    return await call_next(request)
 
 # Include Routers
 app.include_router(rooms.router)
@@ -49,14 +44,9 @@ app.include_router(ws.router)
 
 @app.on_event("startup")
 async def startup_event():
-    # create tables if they don't exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/")
-def health_check():
-    return {"status": "ok"}
-
-@app.get("/")
 async def root():
-    return {"message": "HushHour API is running"}
+    return {"status": "ok", "message": "HushHour API is running"}
